@@ -1,0 +1,12 @@
+name: System
+
+services:
+  api:
+    image: "api:${VERSION:-latest}"
+    container_name: "${SERVER_NAME:-api}"
+    build:
+      context: ../
+      dockerfile: .docker/Dockerfile
+    ports:
+      - "${PORT:-4000}:${PORT:-4000}"
+    command: npm run start:prod
