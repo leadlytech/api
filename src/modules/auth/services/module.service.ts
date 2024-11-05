@@ -3,14 +3,14 @@ import { Request, Response } from 'express';
 
 import { BaseModuleService, ErrorService } from 'src/shared/services';
 import {
-  TLoginRequest,
-  TLoginResponse,
-  TRecoveryRequest,
-  TRecoveryResponse,
   TSignUpRequest,
   TSignUpResponse,
+  TLoginRequest,
+  TLoginResponse,
   TVerifyRequest,
   TVerifyResponse,
+  TConfirmRequest,
+  TConfirmResponse,
 } from '../dto';
 import { HelperService } from './helper.service';
 
@@ -78,13 +78,13 @@ export class ModuleService extends BaseModuleService {
     }
   }
 
-  async recovery(req: Request, res: Response): Promise<TRecoveryResponse> {
+  async verify(req: Request, res: Response): Promise<TVerifyResponse> {
     try {
-      const { body, headers } = this.extract<any, any, TRecoveryRequest>(
+      const { body, headers } = this.extract<any, any, TVerifyRequest>(
         req,
         res,
       );
-      await this.helperService.recovery({
+      await this.helperService.verify({
         ...body,
         origin: this.getOrigin(headers),
       });
@@ -97,10 +97,10 @@ export class ModuleService extends BaseModuleService {
     }
   }
 
-  async verify(req: Request, res: Response): Promise<TVerifyResponse> {
+  async confirm(req: Request, res: Response): Promise<TConfirmResponse> {
     try {
-      const { body } = this.extract<any, any, TVerifyRequest>(req, res);
-      const record = await this.helperService.verify(body);
+      const { body } = this.extract<any, any, TConfirmRequest>(req, res);
+      const record = await this.helperService.confirm(body);
 
       return {
         statusCode: HttpStatus.CREATED,

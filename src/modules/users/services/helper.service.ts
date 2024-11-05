@@ -406,7 +406,6 @@ export class HelperService extends BaseHelperService {
             },
             {
               userId: verification.userId,
-              context: verification.context,
               method: verification.method,
             },
           ],

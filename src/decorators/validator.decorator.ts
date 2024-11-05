@@ -6,6 +6,7 @@ export function Validate(
   zodSchema: z.ZodObject<any>,
   validateMetadataType?: Paramtype,
 ) {
+  console.log('DENTRO DO VALIDATE');
   return applyDecorators(
     UsePipes(new ZodValidationPipe(zodSchema, validateMetadataType)),
   );

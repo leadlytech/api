@@ -1,4 +1,5 @@
 import { extendApi } from '@anatine/zod-openapi';
+import { EVerificationContext } from '@prisma/client';
 import { password } from 'src/modules/users/dto';
 import { z } from 'zod';
 
@@ -25,13 +26,17 @@ export const loginSchema = extendApi(
   }),
 );
 
-export const recoverySchema = extendApi(
+export const verifySchema = extendApi(
   z.object({
+    context: z.enum([
+      EVerificationContext.CONFIRM,
+      EVerificationContext.RECOVERY,
+    ]),
     email: z.string().email(),
   }),
 );
 
-export const verifySchema = extendApi(
+export const confirmSchema = extendApi(
   z.object({
     code: z.string().length(6),
     recovery: z

@@ -1,9 +1,9 @@
 import { createZodDto } from '@anatine/zod-nestjs';
 import {
   loginSchema,
-  recoverySchema,
   signUpSchema,
   verifySchema,
+  confirmSchema,
 } from './schemas';
 
 export class SignUpDto extends createZodDto(signUpSchema) {
@@ -12,7 +12,7 @@ export class SignUpDto extends createZodDto(signUpSchema) {
 export class LoginDto extends createZodDto(loginSchema) {
   origin: string;
 }
-export class RecoveryDto extends createZodDto(recoverySchema) {
+export class VerifyDto extends createZodDto(verifySchema) {
   origin: string;
 }
-export class VerifyDto extends createZodDto(verifySchema) {}
+export class ConfirmDto extends createZodDto(confirmSchema) {}

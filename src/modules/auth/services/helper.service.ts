@@ -10,10 +10,10 @@ import { EventService } from 'src/shared/services';
 import {
   IDefault,
   origin,
-  TLoginRequest,
-  TRecoveryRequest,
   TSignUpRequest,
+  TLoginRequest,
   TVerifyRequest,
+  TConfirmRequest,
 } from '../dto';
 import { TEnv, verifyPassword } from 'src/utils';
 
@@ -122,7 +122,7 @@ export class HelperService {
     }
   }
 
-  async recovery(data: TRecoveryRequest): Promise<Record<string, any>> {
+  async verify(data: TVerifyRequest): Promise<Record<string, any>> {
     try {
       this.logger.log(`Recovery account`);
       const tenant = await this.tenantHelperService.public({
@@ -147,11 +147,11 @@ export class HelperService {
             tenantId: tenant.id,
           },
           user.id,
-          EVerificationContext.RECOVERY,
+          data.context,
           EVerificationMethod.EMAIL,
         );
 
-        this.logger.log(`Recovery code `);
+        this.logger.log(`Recovery code sent`);
 
         return { verified };
       }
@@ -166,7 +166,7 @@ export class HelperService {
     }
   }
 
-  async verify(data: TVerifyRequest): Promise<Record<string, any>> {
+  async confirm(data: TConfirmRequest): Promise<Record<string, any>> {
     try {
       this.logger.log(`Code verification`);
       const verified = await this.userHelperService.confirmCodeVerification({

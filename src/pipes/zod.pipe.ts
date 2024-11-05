@@ -25,6 +25,7 @@ export class ZodValidationPipe implements PipeTransform {
         }
         parsedValue = this.schema.parse(value);
       }
+      console.log(parsedValue);
       return parsedValue;
     } catch (error) {
       throw new HttpException(

@@ -2,7 +2,7 @@ import { User } from '@prisma/client';
 import { IResponse } from 'src/interfaces';
 import { EOriginRoutes } from 'src/routes';
 
-import { LoginDto, RecoveryDto, SignUpDto, VerifyDto } from './classes';
+import { ConfirmDto, LoginDto, SignUpDto, VerifyDto } from './classes';
 
 export const origin = EOriginRoutes.AUTH;
 
@@ -18,9 +18,9 @@ export type TLoginRequest = LoginDto;
 export type TLoginResponse = IResponse<Partial<IDefault>>;
 
 // SignUp
-export type TRecoveryRequest = RecoveryDto;
-export type TRecoveryResponse = IResponse<Partial<IDefault>>;
-
-// Login
 export type TVerifyRequest = VerifyDto;
 export type TVerifyResponse = IResponse<Partial<IDefault>>;
+
+// Login
+export type TConfirmRequest = ConfirmDto;
+export type TConfirmResponse = IResponse<Partial<IDefault>>;

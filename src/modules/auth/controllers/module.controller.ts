@@ -6,8 +6,8 @@ import {
   loginSchema,
   signUpSchema,
   origin,
-  recoverySchema,
   verifySchema,
+  confirmSchema,
 } from '../dto';
 import { IResponse } from 'src/interfaces';
 import { Validate } from 'src/decorators';
@@ -30,20 +30,17 @@ export class ModuleController {
     return res.status(response.statusCode).json(response);
   }
 
-  @Post('recovery')
-  @Validate(recoverySchema)
-  async recovery(
-    @Req() req: Request,
-    @Res() res: Response,
-  ): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.recovery(req, res);
-    return res.status(response.statusCode).json(response);
-  }
-
   @Post('verify')
   @Validate(verifySchema)
   async verify(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.verify(req, res);
+    return res.status(response.statusCode).json(response);
+  }
+
+  @Post('confirm')
+  @Validate(confirmSchema)
+  async confirm(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
+    const response: IResponse = await this.moduleService.confirm(req, res);
     return res.status(response.statusCode).json(response);
   }
 }
