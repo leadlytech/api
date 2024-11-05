@@ -34,6 +34,15 @@ export class ModuleController {
     return res.status(response.statusCode).json(response);
   }
 
+  @Get('public')
+  @Auth({
+    skip: true,
+  })
+  async public(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
+    const response: IResponse = await this.moduleService.public(req, res);
+    return res.status(response.statusCode).json(response);
+  }
+
   @Get(':id')
   @Validate(findSchema)
   async findOne(@Req() req: Request, @Res() res: Response): Promise<IResponse> {

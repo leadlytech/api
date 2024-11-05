@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { EOfferStatus } from '@prisma/client';
+
 import { PrismaService } from 'src/prisma/prisma.service';
 
 import {
@@ -8,7 +10,7 @@ import {
   BaseHelperService,
 } from 'src/shared/services';
 
-import { EFieldType, EPaginationMode } from 'src/interfaces';
+import { EFieldType, EPaginationMode, TList } from 'src/interfaces';
 import {
   IDefault,
   TCreateRequest,
@@ -17,7 +19,6 @@ import {
   TRemoveRequest,
   TUpdateRequest,
 } from '../dto';
-import { TList } from 'src/interfaces';
 import { EOriginRoutes } from 'src/routes';
 import { createRecordId } from 'src/utils';
 
@@ -43,16 +44,9 @@ export class HelperService extends BaseHelperService {
           id: createRecordId(),
           name: data.name,
           domain: data.domain,
+          smtp: data.smtp,
           smsDevKey: data.smsDevKey,
           pushInPayToken: data.pushInPayToken,
-          ...(data.smtp
-            ? {
-                smtpHost: data.smtp.host,
-                smtpPort: data.smtp.port,
-                smtpUser: data.smtp.user,
-                smtpPass: data.smtp.pass,
-              }
-            : undefined),
         },
         select: {
           id: true,
@@ -97,6 +91,79 @@ export class HelperService extends BaseHelperService {
       });
 
       return listed;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async public(data: TFindRequest, renew = false): Promise<Partial<IDefault>> {
+    try {
+      this.logger.log(`Retrieving a single public "${this.origin}"`);
+
+      type R = typeof this.repository;
+      type RType = NonNullable<Awaited<ReturnType<R['findUniqueOrThrow']>>>;
+      let record: Partial<RType> = null;
+
+      if (!renew) {
+        record = await this.cacheService.get(`${this.origin}:public`, data.id);
+      }
+
+      if (!record) {
+        record = await this.repository.findFirstOrThrow({
+          where: {
+            domain: data.id,
+          },
+          select: {
+            id: true,
+            name: true,
+            domain: true,
+            Service: {
+              select: {
+                id: true,
+                name: true,
+                Offer: {
+                  where: {
+                    status: EOfferStatus.ACTIVE,
+                  },
+                  select: {
+                    id: true,
+                    name: true,
+                    description: true,
+                    amount: true,
+                    recurrence: true,
+                    Benefit: {
+                      select: {
+                        value: true,
+                        resource: {
+                          select: {
+                            key: true,
+                            name: true,
+                            description: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (!renew) {
+          await this.cacheService.set(
+            `${this.origin}:public`,
+            record.id,
+            record,
+          );
+        }
+      }
+
+      this.logger.log(
+        `One public "${this.origin}" was retrieved (ID: ${record.id})`,
+      );
+
+      return record;
     } catch (err) {
       throw err;
     }

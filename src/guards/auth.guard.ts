@@ -40,6 +40,10 @@ export class AuthGuard implements CanActivate {
         this.reflector.get('permissionConfig', context.getClass());
       const authorization = request.headers['authorization'] as string;
 
+      if (authConfig?.skip) {
+        return true;
+      }
+
       if (!authorization) {
         return false;
       }

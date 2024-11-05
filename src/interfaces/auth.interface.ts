@@ -19,6 +19,7 @@ export class JwtDto {
 }
 
 export interface IAuthConfig {
+  skip?: boolean;
   onlySystemKey?: boolean;
   blockAPIKey?: boolean;
 }

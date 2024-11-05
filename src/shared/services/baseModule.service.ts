@@ -17,6 +17,7 @@ export class BaseModuleService {
   ): {
     req: Request;
     props: IProps;
+    headers: Record<string, any | any[]>;
     params: TParams;
     query: TQuery;
     body: TBody;
@@ -25,6 +26,7 @@ export class BaseModuleService {
     return {
       req,
       props: req['props'],
+      headers: req['headers'],
       params: req.params as any,
       query: req.query as any,
       body: req.body,

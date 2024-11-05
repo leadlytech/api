@@ -30,11 +30,11 @@ export class ModuleService extends BaseModuleService {
   async create(req: Request, res: Response): Promise<TCreateResponse> {
     try {
       const { body } = this.extract<any, any, TCreateRequest>(req, res);
-      const record = await this.helperService.create(body);
+      const payload = await this.helperService.create(body);
 
       return {
         statusCode: HttpStatus.CREATED,
-        payload: record,
+        payload,
       };
     } catch (err) {
       this.errorService.process(err, this.origin);
@@ -45,6 +45,31 @@ export class ModuleService extends BaseModuleService {
     try {
       const { query } = this.extract<any, TListRequest, any>(req, res);
       const payload = await this.helperService.list(query);
+
+      return {
+        statusCode: HttpStatus.OK,
+        payload,
+      };
+    } catch (err) {
+      this.errorService.process(err, this.origin);
+    }
+  }
+
+  async public(req: Request, res: Response): Promise<TFindResponse> {
+    try {
+      const { headers } = this.extract<any, TListRequest, any>(req, res);
+
+      const origin: string = headers['origin'];
+
+      if (!origin) {
+        return {
+          statusCode: HttpStatus.BAD_REQUEST,
+        };
+      }
+
+      const payload = await this.helperService.public({
+        id: origin,
+      });
 
       return {
         statusCode: HttpStatus.OK,

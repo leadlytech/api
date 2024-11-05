@@ -2,6 +2,9 @@
 CREATE TYPE "EUserStatus" AS ENUM ('ACTIVE', 'BLOCKED', 'SUSPENDED');
 
 -- CreateEnum
+CREATE TYPE "EVerificationContext" AS ENUM ('CONFIRM', 'RECOVERY');
+
+-- CreateEnum
 CREATE TYPE "EVerificationMethod" AS ENUM ('EMAIL', 'PHONE');
 
 -- CreateEnum
@@ -11,21 +14,29 @@ CREATE TYPE "EMemberStatus" AS ENUM ('ACTIVE', 'INVITED', 'DISABLED');
 CREATE TYPE "EChargeStatus" AS ENUM ('PAID', 'PENDING', 'CANCELED');
 
 -- CreateEnum
+CREATE TYPE "EServiceType" AS ENUM ('FUNNELS');
+
+-- CreateEnum
 CREATE TYPE "EOfferRecurrence" AS ENUM ('MONTHLY', 'QUARTERLY', 'SEMMONLY', 'YEARLY');
 
 -- CreateEnum
 CREATE TYPE "EOfferStatus" AS ENUM ('ACTIVE', 'PRIVATE', 'DISABLED');
+
+-- CreateEnum
+CREATE TYPE "ELinkType" AS ENUM ('FACEBOOK');
+
+-- CreateEnum
+CREATE TYPE "EVariableType" AS ENUM ('TEXT', 'NUMBER', 'BOOLEAN', 'PHONE', 'EMAIL');
+
+-- CreateEnum
+CREATE TYPE "EStepType" AS ENUM ('START', 'PAGE', 'WEBHOOK', 'REDIRECT', 'DISTRIBUTOR', 'COMMUNITY');
 
 -- CreateTable
 CREATE TABLE "tenants" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "domain" TEXT NOT NULL,
-    "smtpHost" TEXT,
-    "smtpPort" INTEGER,
-    "smtpUser" TEXT,
-    "smtpPass" TEXT,
-    "smtpTls" BOOLEAN,
+    "smtp" JSONB,
     "smsDevKey" TEXT,
     "pushInPayToken" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -60,6 +71,7 @@ CREATE TABLE "verifications" (
     "id" TEXT NOT NULL,
     "userId" TEXT,
     "code" TEXT NOT NULL,
+    "context" "EVerificationContext" NOT NULL,
     "method" "EVerificationMethod" NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -179,18 +191,6 @@ CREATE TABLE "webhooks" (
 );
 
 -- CreateTable
-CREATE TABLE "webhookHistory" (
-    "id" TEXT NOT NULL,
-    "webhookId" TEXT NOT NULL,
-    "request" JSONB,
-    "response" JSONB,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "webhookHistory_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "subscriptions" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
@@ -219,11 +219,13 @@ CREATE TABLE "charges" (
 CREATE TABLE "services" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
+    "type" "EServiceType" NOT NULL,
     "name" TEXT NOT NULL,
+    "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "services_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "services_pkey" PRIMARY KEY ("tenantId","type")
 );
 
 -- CreateTable
@@ -263,6 +265,111 @@ CREATE TABLE "benefits" (
     CONSTRAINT "benefits_pkey" PRIMARY KEY ("offerId","resourceId")
 );
 
+-- CreateTable
+CREATE TABLE "funnels" (
+    "id" TEXT NOT NULL,
+    "organizationId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "funnels_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "links" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "funnelId" TEXT NOT NULL,
+    "type" "ELinkType",
+    "enabled" BOOLEAN,
+    "name" TEXT,
+    "customPath" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "links_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "leads" (
+    "id" TEXT NOT NULL,
+    "funnelId" TEXT NOT NULL,
+    "linkId" TEXT,
+    "name" TEXT,
+    "email" TEXT,
+    "phoneNumber" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "leads_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "variables" (
+    "id" TEXT NOT NULL,
+    "funnelId" TEXT NOT NULL,
+    "type" "EVariableType" NOT NULL,
+    "name" TEXT NOT NULL,
+    "regex" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "variables_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "values" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "variableId" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "values_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "steps" (
+    "id" TEXT NOT NULL,
+    "funnelId" TEXT NOT NULL,
+    "type" "EStepType" NOT NULL,
+    "name" TEXT NOT NULL,
+    "config" JSONB,
+    "statistics" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "steps_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "edges" (
+    "id" TEXT NOT NULL,
+    "originId" TEXT NOT NULL,
+    "destinyId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "edges_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "interactions" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "stepId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "interactions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "tenants_domain_key" ON "tenants"("domain");
+
 -- CreateIndex
 CREATE UNIQUE INDEX "verifications_code_key" ON "verifications"("code");
 
@@ -271,6 +378,9 @@ CREATE UNIQUE INDEX "keys_value_key" ON "keys"("value");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "permissions_id_key" ON "permissions"("id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "services_id_key" ON "services"("id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "resources_id_key" ON "resources"("id");
@@ -330,9 +440,6 @@ ALTER TABLE "keyPermission" ADD CONSTRAINT "keyPermission_permissionId_fkey" FOR
 ALTER TABLE "webhooks" ADD CONSTRAINT "webhooks_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "webhookHistory" ADD CONSTRAINT "webhookHistory_webhookId_fkey" FOREIGN KEY ("webhookId") REFERENCES "webhooks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -358,3 +465,42 @@ ALTER TABLE "benefits" ADD CONSTRAINT "benefits_offerId_fkey" FOREIGN KEY ("offe
 
 -- AddForeignKey
 ALTER TABLE "benefits" ADD CONSTRAINT "benefits_resourceId_fkey" FOREIGN KEY ("resourceId") REFERENCES "resources"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "funnels" ADD CONSTRAINT "funnels_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "links" ADD CONSTRAINT "links_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "links" ADD CONSTRAINT "links_funnelId_fkey" FOREIGN KEY ("funnelId") REFERENCES "funnels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "leads" ADD CONSTRAINT "leads_funnelId_fkey" FOREIGN KEY ("funnelId") REFERENCES "funnels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "leads" ADD CONSTRAINT "leads_linkId_fkey" FOREIGN KEY ("linkId") REFERENCES "links"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "variables" ADD CONSTRAINT "variables_funnelId_fkey" FOREIGN KEY ("funnelId") REFERENCES "funnels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "values" ADD CONSTRAINT "values_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "leads"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "values" ADD CONSTRAINT "values_variableId_fkey" FOREIGN KEY ("variableId") REFERENCES "variables"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "steps" ADD CONSTRAINT "steps_funnelId_fkey" FOREIGN KEY ("funnelId") REFERENCES "funnels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "edges" ADD CONSTRAINT "edges_originId_fkey" FOREIGN KEY ("originId") REFERENCES "steps"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "edges" ADD CONSTRAINT "edges_destinyId_fkey" FOREIGN KEY ("destinyId") REFERENCES "steps"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "interactions" ADD CONSTRAINT "interactions_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "leads"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "interactions" ADD CONSTRAINT "interactions_stepId_fkey" FOREIGN KEY ("stepId") REFERENCES "steps"("id") ON DELETE CASCADE ON UPDATE CASCADE;

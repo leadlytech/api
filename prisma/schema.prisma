@@ -17,12 +17,8 @@ datasource db {
 model Tenant {
   id             String         @id
   name           String
-  domain         String
-  smtpHost       String?
-  smtpPort       Int?
-  smtpUser       String?
-  smtpPass       String?
-  smtpTls        Boolean?
+  domain         String         @unique
+  smtp           Json?
   smsDevKey      String?
   pushInPayToken String?
   createdAt      DateTime       @default(now())
@@ -33,6 +29,7 @@ model Tenant {
   Permission     Permission[]
   Role           Role[]
   Service        Service[]
+  Link           Link[]
 
   @@map("tenants")
 }
@@ -105,6 +102,7 @@ model Organization {
   Charge       Charge[]
   Key          Key[]
   Role         Role[]
+  Funnel       Funnel[]
 
   @@map("organizations")
 }
@@ -228,30 +226,17 @@ model KeyPermission {
 }
 
 model Webhook {
-  id             String           @id
+  id             String       @id
   organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   name           String
   description    String
   url            String
   disabled       Boolean?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @default(now()) @updatedAt
-  WebhookHistory WebhookHistory[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
 
   @@map("webhooks")
-}
-
-model WebhookHistory {
-  id        String   @id
-  webhookId String
-  webhook   Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  request   Json?
-  response  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@map("webhookHistory")
 }
 
 model Subscription {
@@ -287,15 +272,22 @@ model Charge {
   @@map("charges")
 }
 
-model Service {
-  id        String   @id
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-  Offer     Offer[]
+enum EServiceType {
+  FUNNELS // Serviço de funis
+}
 
+model Service {
+  id          String       @unique
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  type        EServiceType
+  name        String
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+  Offer       Offer[]
+
+  @@id([tenantId, type])
   @@map("services")
 }
 
@@ -354,4 +346,149 @@ model Benefit {
 
   @@id([offerId, resourceId])
   @@map("benefits")
+}
+
+// Modelo da entidade fundamental do funil
+model Funnel {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  name           String
+  description    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  Link           Link[]
+  Lead           Lead[]
+  Variable       Variable[]
+  Step           Step[]
+
+  @@map("funnels")
+}
+
+enum ELinkType {
+  FACEBOOK
+}
+
+// Modelo que armazena os links para um determinado funil
+model Link {
+  id         String     @id
+  tenantId   String
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  funnelId   String
+  funnel     Funnel     @relation(fields: [funnelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  type       ELinkType? // Define o tipo de link, que permite segmentar a origem dos leads. Se for nulo então é o link padrão
+  enabled    Boolean?
+  name       String?
+  customPath String? // Link com "path" personalizado
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @default(now()) @updatedAt
+  Lead       Lead[]
+
+  @@map("links")
+}
+
+// Modelo que armazena os "leads", pessoas que entraram no funil
+model Lead {
+  id          String        @id
+  funnelId    String
+  funnel      Funnel        @relation(fields: [funnelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  linkId      String?
+  link        Link?         @relation(fields: [linkId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  name        String?
+  email       String?
+  phoneNumber String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+  Value       Value[]
+  Interaction Interaction[]
+
+  @@map("leads")
+}
+
+enum EVariableType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  PHONE
+  EMAIL
+}
+
+model Variable {
+  id        String        @id
+  funnelId  String
+  funnel    Funnel        @relation(fields: [funnelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  type      EVariableType
+  name      String
+  regex     Json? // Configuração de regex customizada para validar o valor
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now()) @updatedAt
+  Value     Value[]
+
+  @@map("variables")
+}
+
+model Value {
+  id         String   @id
+  leadId     String
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  variableId String
+  variable   Variable @relation(fields: [variableId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  value      String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("values")
+}
+
+enum EStepType {
+  START // Nó que inicializa o funil, ele é sempre o primeiro e só existe 1 por funil
+  PAGE // Nó que renderiza uma página
+  WEBHOOK // Nó que dispara um evento de webhook
+  REDIRECT // Nó que faz um redirecionamento externo
+  DISTRIBUTOR // Nó que divide o fluxo em vários caminhos possíveis. O caminho que será seguido pode ser determinado por sorteio, proporção, ou condicionais
+  COMMUNITY // Nó para mandar a pessoa para uma comunidade (WhatsApp, Telegram, Discord, etc.)
+}
+
+// Modelo das etapas dentro de um funil
+model Step {
+  id          String        @id
+  funnelId    String
+  funnel      Funnel        @relation(fields: [funnelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  type        EStepType
+  name        String // Nome customizável da etapa
+  config      Json? // Configuração efetiva da etapa (Varia de acordo com o tipo da etapa)
+  statistics  Json? // Estatísticas da etapa
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+  EdgeOrigin  Edge[]        @relation("EdgeOrigin")
+  EdgeDestiny Edge[]        @relation("EdgeDestiny")
+  Interaction Interaction[]
+
+  @@map("steps")
+}
+
+// Modelo que armazena as coneções entre as etapas
+model Edge {
+  id        String   @id
+  originId  String
+  origin    Step     @relation("EdgeOrigin", fields: [originId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  destinyId String
+  destiny   Step     @relation("EdgeDestiny", fields: [destinyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("edges")
+}
+
+// Modelo que armazena as interações de um lead em uma determinada etapa
+model Interaction {
+  id        String   @id
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  stepId    String
+  step      Step     @relation(fields: [stepId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("interactions")
 }

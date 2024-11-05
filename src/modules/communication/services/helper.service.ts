@@ -28,21 +28,25 @@ export class HelperService {
         },
         select: {
           domain: true,
-          smtpHost: true,
-          smtpPort: true,
-          smtpUser: true,
-          smtpPass: true,
-          smtpTls: true,
+          smtp: true,
         },
       });
 
+      const smtp: {
+        host: string;
+        port: number;
+        user: string;
+        pass: string;
+        tls: boolean;
+      } = credentials.smtp as any;
+
       const transporter = nodemailer.createTransport({
-        host: credentials.smtpHost,
-        port: credentials.smtpPort,
-        secure: credentials.smtpTls,
+        host: smtp.host,
+        port: smtp.port,
+        secure: smtp.tls,
         auth: {
-          user: credentials.smtpUser,
-          pass: credentials.smtpPass,
+          user: smtp.user,
+          pass: smtp.pass,
         },
       });
 
