@@ -34,146 +34,6 @@ model Tenant {
   @@map("tenants")
 }
 
-enum EUserStatus {
-  ACTIVE
-  BLOCKED
-  SUSPENDED
-}
-
-// Modelo que armazena os usuários
-model User {
-  id                    String           @id
-  tenantId              String
-  tenant                Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  status                EUserStatus      @default(ACTIVE)
-  lockReason            String?
-  firstName             String
-  lastName              String?
-  email                 String
-  emailUpdate           String?
-  emailVerifiedAt       DateTime?
-  phoneNumber           String
-  phoneNumberUpdate     String?
-  phoneNumberVerifiedAt DateTime?
-  password              String
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @default(now()) @updatedAt
-  Member                Member[]
-  Confirmation          Verification[]
-  UserPermission        UserPermission[]
-
-  @@map("users")
-}
-
-enum EVerificationContext {
-  CONFIRM // Confirmar um valor (email, telefone, etc)
-  RECOVERY // Recuperar conta
-}
-
-enum EVerificationMethod {
-  EMAIL
-  PHONE
-}
-
-model Verification {
-  id        String               @id
-  userId    String?
-  user      User?                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  code      String               @unique
-  context   EVerificationContext
-  method    EVerificationMethod
-  expireAt  DateTime? // Data em que o código de verificação irá expirar
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @default(now()) @updatedAt
-
-  @@map("verifications")
-}
-
-// Modelo que armazena as organizações
-model Organization {
-  id           String         @id
-  tenantId     String
-  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  name         String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @default(now()) @updatedAt
-  Member       Member[]
-  Webhook      Webhook[]
-  Subscription Subscription[]
-  Charge       Charge[]
-  Key          Key[]
-  Role         Role[]
-  Funnel       Funnel[]
-
-  @@map("organizations")
-}
-
-// Modelo que armazena as chaves de API das organizações
-model Key {
-  id             String          @id
-  organizationId String
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  value          String          @unique // Chave de API
-  disabled       Boolean?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @default(now()) @updatedAt
-  KeyPermission  KeyPermission[]
-
-  @@map("keys")
-}
-
-enum EMemberStatus {
-  ACTIVE // Membro ativo
-  INVITED // Convite enviado
-  DISABLED // Membro desativado
-}
-
-// Modelo que relaciona os usuário como participantes de organizações
-model Member {
-  id             String        @id
-  userId         String?
-  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  status         EMemberStatus @default(INVITED)
-  owner          Boolean?
-  inviteEmail    String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @default(now()) @updatedAt
-  MemberRole     MemberRole[]
-
-  @@map("members")
-}
-
-// pivot
-model MemberRole {
-  memberId String
-  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  roleId   String
-  role     Role   @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@id([memberId, roleId])
-  @@map("memberRole")
-}
-
-// Modelo que armazena as roles de organizações
-model Role {
-  id             String           @id
-  tenantId       String
-  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  name           String
-  description    String?
-  selfManaged    Boolean? // Determina se a role só pode ser alterada pelo sistema
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @default(now()) @updatedAt
-  MemberRole     MemberRole[]
-  RolePermission RolePermission[]
-
-  @@map("roles")
-}
-
 // Modelo que armazena as permissões do sistema
 model Permission {
   id             String           @unique
@@ -193,85 +53,7 @@ model Permission {
   @@map("permissions")
 }
 
-// (pivot) Modelo que relaciona usuários diretamente às permissões (Para acesso administrativo)
-model UserPermission {
-  userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  permissionId String
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@id([userId, permissionId])
-  @@map("userPermission")
-}
-
-// pivot
-model RolePermission {
-  roleId       String
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  permissionId String
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@id([roleId, permissionId])
-  @@map("rolePermission")
-}
-
-// pivot
-model KeyPermission {
-  keyId        String
-  key          Key        @relation(fields: [keyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  permissionId String
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@id([keyId, permissionId])
-  @@map("keyPermission")
-}
-
-model Webhook {
-  id             String       @id
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  name           String
-  description    String
-  url            String
-  disabled       Boolean?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @default(now()) @updatedAt
-
-  @@map("webhooks")
-}
-
-model Subscription {
-  id             String       @id
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  offerId        String
-  offer          Offer        @relation(fields: [offerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  nextCharge     DateTime? // Data da próxima cobrança do valor da oferta
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @default(now()) @updatedAt
-
-  @@map("subscriptions")
-}
-
-enum EChargeStatus {
-  PAID
-  PENDING
-  CANCELED
-}
-
-model Charge {
-  id             String        @id
-  organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  offerId        String
-  offer          Offer         @relation(fields: [offerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  status         EChargeStatus @default(PENDING)
-  amount         Int?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @default(now()) @updatedAt
-
-  @@map("charges")
-}
+// # GESTÃO DOS SERVIÇOS DO TENANT
 
 enum EServiceType {
   FUNNELS // Serviço de funis
@@ -349,6 +131,265 @@ model Benefit {
   @@map("benefits")
 }
 
+// # USUÁRIOS
+
+enum EUserStatus {
+  ACTIVE
+  BLOCKED
+  SUSPENDED
+}
+
+// Modelo que armazena os usuários
+model User {
+  id                    String           @id
+  tenantId              String
+  tenant                Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  status                EUserStatus      @default(ACTIVE)
+  lockReason            String?
+  firstName             String
+  lastName              String?
+  email                 String
+  emailUpdate           String?
+  emailVerifiedAt       DateTime?
+  phoneNumber           String
+  phoneNumberUpdate     String?
+  phoneNumberVerifiedAt DateTime?
+  password              String
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @default(now()) @updatedAt
+  Member                Member[]
+  Confirmation          Verification[]
+  UserPermission        UserPermission[]
+
+  @@map("users")
+}
+
+enum EVerificationContext {
+  CONFIRM // Confirmar um valor (email, telefone, etc)
+  RECOVERY // Recuperar conta
+}
+
+enum EVerificationMethod {
+  EMAIL
+  PHONE
+}
+
+model Verification {
+  id        String               @id
+  userId    String?
+  user      User?                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  code      String               @unique
+  context   EVerificationContext
+  method    EVerificationMethod
+  expireAt  DateTime? // Data em que o código de verificação irá expirar
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @default(now()) @updatedAt
+
+  @@map("verifications")
+}
+
+// (pivot) Modelo que relaciona usuários diretamente às permissões (Para acesso administrativo)
+model UserPermission {
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([userId, permissionId])
+  @@map("userPermission")
+}
+
+// # ORGANIZAÇÕES, AGRUPAMENTOS E CONTROLE DE ACESSO
+
+// Modelo que armazena as organizações
+model Organization {
+  id           String         @id
+  tenantId     String
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  name         String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @default(now()) @updatedAt
+  Member       Member[]
+  Subscription Subscription[]
+  Charge       Charge[]
+  Key          Key[]
+  Role         Role[]
+  Funnel       Funnel[]
+  Link         Link[]
+
+  @@map("organizations")
+}
+
+// Modelo que armazena as chaves de API das organizações
+model Key {
+  id             String          @id
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  value          String          @unique // Chave de API
+  disabled       Boolean?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now()) @updatedAt
+  KeyPermission  KeyPermission[]
+
+  @@map("keys")
+}
+
+// pivot
+model KeyPermission {
+  keyId        String
+  key          Key        @relation(fields: [keyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([keyId, permissionId])
+  @@map("keyPermission")
+}
+
+enum EMemberStatus {
+  ACTIVE // Membro ativo
+  INVITED // Convite enviado
+  DISABLED // Membro desativado
+}
+
+// Modelo que relaciona os usuário como participantes de organizações
+model Member {
+  id             String        @id
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  status         EMemberStatus @default(INVITED)
+  owner          Boolean?
+  inviteEmail    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @default(now()) @updatedAt
+  MemberRole     MemberRole[]
+
+  @@map("members")
+}
+
+// pivot
+model MemberRole {
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  roleId   String
+  role     Role   @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([memberId, roleId])
+  @@map("memberRole")
+}
+
+model Subscription {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  offerId        String
+  offer          Offer        @relation(fields: [offerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  nextCharge     DateTime? // Data da próxima cobrança do valor da oferta
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+
+  @@map("subscriptions")
+}
+
+enum EChargeStatus {
+  PAID
+  PENDING
+  CANCELED
+}
+
+model Charge {
+  id             String        @id
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  offerId        String
+  offer          Offer         @relation(fields: [offerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  status         EChargeStatus @default(PENDING)
+  amount         Int?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @default(now()) @updatedAt
+
+  @@map("charges")
+}
+
+// Modelo que armazena as roles de organizações
+model Role {
+  id             String           @id
+  tenantId       String
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  name           String
+  description    String?
+  selfManaged    Boolean? // Determina se a role só pode ser alterada pelo sistema
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now()) @updatedAt
+  MemberRole     MemberRole[]
+  RolePermission RolePermission[]
+
+  @@map("roles")
+}
+
+// pivot
+model RolePermission {
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("rolePermission")
+}
+
+// # SERVIÇO DE LINKS
+
+// Modelo que armazena os links para um determinado funil
+model Link {
+  id             String       @id
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  enabled        Boolean?
+  name           String?
+  customPath     String? // Link com "path" personalizado
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  Tracker        Tracker[]
+  Click          Click[]
+
+  @@map("links")
+}
+
+enum EClickDevice {
+  MOBILE
+  DESKTOP
+}
+
+enum EClickOS {
+  CHROMEOS
+  WINDOWS
+  LINUX
+  MACOS
+}
+
+model Click {
+  id        String        @id
+  linkId    String
+  link      Link          @relation(fields: [linkId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ip        String?
+  country   String?
+  device    EClickDevice?
+  os        EClickOS?
+  allowed   Boolean?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now()) @updatedAt
+
+  @@map("clicks")
+}
+
+// # SERVIÇO DE FUNIS
+
 // Modelo da entidade fundamental do funil
 model Funnel {
   id             String       @id
@@ -358,34 +399,32 @@ model Funnel {
   description    String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @default(now()) @updatedAt
-  Link           Link[]
   Lead           Lead[]
   Variable       Variable[]
   Step           Step[]
+  Tracker        Tracker[]
 
   @@map("funnels")
 }
 
-enum ELinkType {
-  FACEBOOK
+enum ETrackerOrigin {
+  META
+  TIKTOK
+  GTM
 }
 
-// Modelo que armazena os links para um determinado funil
-model Link {
-  id         String     @id
-  tenantId   String
-  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  funnelId   String
-  funnel     Funnel     @relation(fields: [funnelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  type       ELinkType? // Define o tipo de link, que permite segmentar a origem dos leads. Se for nulo então é o link padrão
-  enabled    Boolean?
-  name       String?
-  customPath String? // Link com "path" personalizado
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @default(now()) @updatedAt
-  Lead       Lead[]
+model Tracker {
+  funnelId  String
+  funnel    Funnel         @relation(fields: [funnelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  linkId    String
+  link      Link           @relation(fields: [linkId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  origin    ETrackerOrigin
+  code      String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @default(now()) @updatedAt
 
-  @@map("links")
+  @@id([funnelId, linkId])
+  @@map("trackers")
 }
 
 // Modelo que armazena os "leads", pessoas que entraram no funil
@@ -393,8 +432,6 @@ model Lead {
   id          String        @id
   funnelId    String
   funnel      Funnel        @relation(fields: [funnelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  linkId      String?
-  link        Link?         @relation(fields: [linkId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   name        String?
   email       String?
   phoneNumber String?
@@ -414,6 +451,7 @@ enum EVariableType {
   EMAIL
 }
 
+// Modelo que armazena as variáveis disponível no funil
 model Variable {
   id        String        @id
   funnelId  String
@@ -428,6 +466,7 @@ model Variable {
   @@map("variables")
 }
 
+// Modelo que armazena os valores das variáveis assim como à qual lead elas pertencem
 model Value {
   id         String   @id
   leadId     String
