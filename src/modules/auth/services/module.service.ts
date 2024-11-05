@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 import { BaseModuleService, ErrorService } from 'src/shared/services';
@@ -25,10 +25,32 @@ export class ModuleService extends BaseModuleService {
   private origin = ModuleService.name;
   private logger = new Logger(this.origin);
 
+  getOrigin(headers: Record<string, any | any[]>) {
+    const origin = headers['origin'];
+    if (!origin) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'ERR_MISSING_ORIGIN_HEADER',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return origin;
+  }
+
   async signUp(req: Request, res: Response): Promise<TSignUpResponse> {
     try {
-      const { body } = this.extract<any, any, TSignUpRequest>(req, res);
-      const record = await this.helperService.signUp(body);
+      const { body, headers } = this.extract<any, any, TSignUpRequest>(
+        req,
+        res,
+      );
+
+      const record = await this.helperService.signUp({
+        ...body,
+        origin: this.getOrigin(headers),
+      });
 
       return {
         statusCode: HttpStatus.CREATED,
@@ -41,8 +63,11 @@ export class ModuleService extends BaseModuleService {
 
   async login(req: Request, res: Response): Promise<TLoginResponse> {
     try {
-      const { body } = this.extract<any, any, TLoginRequest>(req, res);
-      const record = await this.helperService.login(body);
+      const { body, headers } = this.extract<any, any, TLoginRequest>(req, res);
+      const record = await this.helperService.login({
+        ...body,
+        origin: this.getOrigin(headers),
+      });
 
       return {
         statusCode: HttpStatus.CREATED,
@@ -55,8 +80,14 @@ export class ModuleService extends BaseModuleService {
 
   async recovery(req: Request, res: Response): Promise<TRecoveryResponse> {
     try {
-      const { body } = this.extract<any, any, TRecoveryRequest>(req, res);
-      await this.helperService.recovery(body);
+      const { body, headers } = this.extract<any, any, TRecoveryRequest>(
+        req,
+        res,
+      );
+      await this.helperService.recovery({
+        ...body,
+        origin: this.getOrigin(headers),
+      });
 
       return {
         statusCode: HttpStatus.OK,

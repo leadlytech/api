@@ -1,5 +1,8 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+
+import { EVerificationContext, EVerificationMethod } from '@prisma/client';
 
 import { PrismaService } from 'src/prisma/prisma.service';
 import { EventService } from 'src/shared/services';
@@ -14,16 +17,17 @@ import {
 } from '../dto';
 import { TEnv, verifyPassword } from 'src/utils';
 
-import { HelperService as UserHelperService } from 'src/modules/users/services';
 import { JwtDto } from 'src/interfaces';
-import { ConfigService } from '@nestjs/config';
-import { EVerificationContext, EVerificationMethod } from '@prisma/client';
+
+import { HelperService as UserHelperService } from 'src/modules/users/services';
+import { HelperService as TenantHelperService } from 'src/modules/tenants/services';
 
 @Injectable()
 export class HelperService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly userHelperService: UserHelperService,
+    private readonly tenantHelperService: TenantHelperService,
     private readonly configService: ConfigService<TEnv>,
     private readonly eventService: EventService,
     private readonly jwtService: JwtService,
@@ -36,15 +40,19 @@ export class HelperService {
     try {
       this.logger.log(`Making SignUp`);
 
+      const tenant = await this.tenantHelperService.public({
+        id: data.origin,
+      });
+
       // Cria a conta do usuário
       const payload = await this.userHelperService.create(
-        { tenantId: data.tenantId },
+        { tenantId: tenant.id },
         data,
       );
 
       // Envia verificação de email
       await this.userHelperService.sendVerification(
-        { tenantId: data.tenantId },
+        { tenantId: tenant.id },
         payload.id,
         EVerificationContext.CONFIRM,
         EVerificationMethod.EMAIL,
@@ -52,7 +60,7 @@ export class HelperService {
 
       // Envia verificação de sms
       // await this.userHelperService.sendVerification(
-      //   { tenantId: data.tenantId },
+      //   { tenantId: tenant.id },
       //   payload.id,
       //   EVerificationContext.CONFIRM,
       //   EVerificationMethod.PHONE,
@@ -69,9 +77,13 @@ export class HelperService {
   async login(data: TLoginRequest): Promise<Record<string, any>> {
     try {
       this.logger.log(`Making Login`);
+      const tenant = await this.tenantHelperService.public({
+        id: data.origin,
+      });
+
       const user = await this.repository.findFirst({
         where: {
-          tenantId: data.tenantId,
+          tenantId: tenant.id,
           email: data.email,
         },
         select: {
@@ -113,6 +125,10 @@ export class HelperService {
   async recovery(data: TRecoveryRequest): Promise<Record<string, any>> {
     try {
       this.logger.log(`Recovery account`);
+      const tenant = await this.tenantHelperService.public({
+        id: data.origin,
+      });
+
       const user = await this.repository.findFirst({
         where: {
           email: data.email,
@@ -121,16 +137,30 @@ export class HelperService {
           id: true,
         },
       });
-      const verified = await this.userHelperService.sendVerification(
-        {
-          tenantId: data.tenantId,
-        },
-        user.id,
-        EVerificationContext.RECOVERY,
-        EVerificationMethod.EMAIL,
+
+      if (user) {
+        this.logger.log(
+          `User of email "${data.email}" found, sending recovery code... (TENANT ID: ${tenant.id})`,
+        );
+        const verified = await this.userHelperService.sendVerification(
+          {
+            tenantId: tenant.id,
+          },
+          user.id,
+          EVerificationContext.RECOVERY,
+          EVerificationMethod.EMAIL,
+        );
+
+        this.logger.log(`Recovery code `);
+
+        return { verified };
+      }
+
+      this.logger.log(
+        `User of email "${data.email}" not found (TENANT ID: ${tenant.id})`,
       );
 
-      return { verified };
+      return { verified: false };
     } catch (err) {
       throw err;
     }

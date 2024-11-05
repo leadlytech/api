@@ -82,6 +82,7 @@ model Verification {
   code      String               @unique
   context   EVerificationContext
   method    EVerificationMethod
+  expireAt  DateTime? // Data em que o código de verificação irá expirar
   createdAt DateTime             @default(now())
   updatedAt DateTime             @default(now()) @updatedAt
 

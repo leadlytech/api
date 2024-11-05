@@ -4,7 +4,6 @@ import { z } from 'zod';
 
 export const signUpSchema = extendApi(
   z.object({
-    tenantId: z.string(),
     firstName: z.string(),
     lastName: z.string().optional(),
     email: z.string().email(),
@@ -15,7 +14,6 @@ export const signUpSchema = extendApi(
 
 export const loginSchema = extendApi(
   z.object({
-    tenantId: z.string(),
     email: z.string().email(),
     password,
     mfa: z
@@ -29,7 +27,6 @@ export const loginSchema = extendApi(
 
 export const recoverySchema = extendApi(
   z.object({
-    tenantId: z.string(),
     email: z.string().email(),
   }),
 );

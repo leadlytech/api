@@ -282,6 +282,7 @@ export class HelperService extends BaseHelperService {
         id: userId,
       });
 
+      // Verifica se o campo que está tentando ser verificado já não está confirmado
       if (context === EVerificationContext.CONFIRM) {
         if (
           (user.emailVerifiedAt && method === EVerificationMethod.EMAIL) ||
@@ -296,6 +297,31 @@ export class HelperService extends BaseHelperService {
         }
       }
 
+      // Verifica se já foi enviada alguma verificação do tipo que ainda esteja ativa
+      const verify = await this.prisma.verification.findFirst({
+        where: {
+          userId,
+          context,
+          method,
+          expireAt: {
+            gt: new Date(),
+          },
+        },
+      });
+
+      // Se algum registro for encontrado, então ainda existe uma solicitação válida
+      if (verify) {
+        throw new HttpException(
+          {
+            message: 'ERR_VERIFICATION_ALREADY_SEND',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const expireAt = new Date();
+      expireAt.setHours(expireAt.getHours() + 1);
+
       const newVerification = await this.prisma.verification.create({
         data: {
           id: createRecordId(),
@@ -303,6 +329,7 @@ export class HelperService extends BaseHelperService {
           code: generateRandomCode(6),
           context,
           method,
+          expireAt,
         },
         select: {
           code: true,
