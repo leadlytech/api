@@ -1,4 +1,4 @@
-import { Key } from '@prisma/client';
+import { Member } from '@prisma/client';
 import { IResponse, TList } from 'src/interfaces';
 import { EOriginRoutes } from 'src/routes';
 
@@ -7,7 +7,7 @@ import { CreateDto, ListDto, FindDto, UpdateDto, RemoveDto } from './classes';
 export const origin = EOriginRoutes.MEMBERS;
 
 // Default
-export interface IDefault extends Key {}
+export type IDefault = Member;
 
 // Create
 export type TCreateRequest = CreateDto;

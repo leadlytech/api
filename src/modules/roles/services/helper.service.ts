@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
@@ -33,7 +32,7 @@ export class HelperService extends BaseHelperService {
   }
   private origin = origin;
   private logger = new Logger(this.origin);
-  private repository = this.prisma.key;
+  private repository = this.prisma.role;
 
   async create(
     props: IProps,
@@ -44,7 +43,13 @@ export class HelperService extends BaseHelperService {
       const record = await this.repository.create({
         data: {
           id: createRecordId(),
-          value: randomUUID(),
+          name: data.name,
+          description: data.description,
+          tenant: {
+            connect: {
+              id: props.tenantId,
+            },
+          },
           organization: {
             connect: {
               id: data.organizationId,
@@ -54,7 +59,6 @@ export class HelperService extends BaseHelperService {
         },
         select: {
           id: true,
-          value: true,
         },
       });
 
@@ -106,8 +110,8 @@ export class HelperService extends BaseHelperService {
           },
           select: {
             id: true,
-            value: true,
-            disabled: true,
+            name: true,
+            description: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -138,7 +142,7 @@ export class HelperService extends BaseHelperService {
     try {
       this.logger.log(`Retrieving a single "${this.origin}"`);
 
-      type R = typeof this.repository;
+      type R = typeof this.prisma.role;
       type RType = NonNullable<Awaited<ReturnType<R['findUniqueOrThrow']>>>;
       let record: Partial<RType> = null;
 
@@ -157,10 +161,54 @@ export class HelperService extends BaseHelperService {
           },
           select: {
             id: true,
-            disabled: true,
+            name: true,
+            description: true,
+            selfManaged: true,
             createdAt: true,
             updatedAt: true,
           },
+        });
+
+        const memberRoles = await this.prisma.memberRole.findMany({
+          where: {
+            roleId: record.id,
+          },
+          select: {
+            member: {
+              select: {
+                id: true,
+                status: true,
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        const rolePermissions = await this.prisma.rolePermission.findMany({
+          where: {
+            roleId: record.id,
+          },
+          select: {
+            permission: {
+              select: {
+                value: true,
+              },
+            },
+          },
+        });
+
+        record['members'] = memberRoles.map((memberRole) => {
+          return memberRole.member;
+        });
+
+        record['permissions'] = rolePermissions.map((rolePermission) => {
+          return rolePermission.permission.value;
         });
 
         if (!renew) {
@@ -237,7 +285,7 @@ export class HelperService extends BaseHelperService {
 
   async connectPermissions(
     tenantId: string,
-    keyId: string,
+    roleId: string,
     permissionsValues: string[],
   ) {
     try {
@@ -256,19 +304,19 @@ export class HelperService extends BaseHelperService {
       const permissionsIds = permissions.map((permission) => permission.id);
 
       // Apaga as permissões conectadas que não estejam na lista anterior
-      await this.prisma.keyPermission.deleteMany({
+      await this.prisma.rolePermission.deleteMany({
         where: {
-          keyId,
+          roleId,
           permissionId: { notIn: permissionsIds },
         },
       });
 
       // Cria as conexões ausentes
-      await this.prisma.keyPermission.createMany({
+      await this.prisma.rolePermission.createMany({
         skipDuplicates: true,
         data: permissionsIds.map((permissionId) => {
           return {
-            keyId,
+            roleId,
             permissionId,
           };
         }),

@@ -7,7 +7,7 @@ import { ConfirmDto, LoginDto, SignUpDto, VerifyDto } from './classes';
 export const origin = EOriginRoutes.AUTH;
 
 // Default
-export interface IDefault extends User {}
+export type IDefault = User;
 
 // SignUp
 export type TSignUpRequest = SignUpDto;

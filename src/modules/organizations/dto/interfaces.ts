@@ -7,7 +7,7 @@ import { CreateDto, ListDto, FindDto, UpdateDto, RemoveDto } from './classes';
 export const origin = EOriginRoutes.ORGANIZATIONS;
 
 // Default
-export interface IDefault extends Organization {}
+export type IDefault = Organization;
 
 // Create
 export type TCreateRequest = CreateDto;

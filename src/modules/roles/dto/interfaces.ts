@@ -4,7 +4,7 @@ import { EOriginRoutes } from 'src/routes';
 
 import { CreateDto, ListDto, FindDto, UpdateDto, RemoveDto } from './classes';
 
-export const origin = EOriginRoutes.KEYS;
+export const origin = EOriginRoutes.ROLES;
 
 // Default
 export type IDefault = Key;

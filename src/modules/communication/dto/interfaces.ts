@@ -7,7 +7,7 @@ import { LoginDto, SignUpDto } from './classes';
 export const origin = EOriginRoutes.ACCOUNT;
 
 // Default
-export interface IDefault extends User {}
+export type IDefault = User;
 
 // SignUp
 export type TSignUpRequest = SignUpDto;

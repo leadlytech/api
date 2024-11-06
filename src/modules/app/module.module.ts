@@ -24,6 +24,7 @@ import { KeysModule } from 'src/modules/keys/module.module';
 import { PermissionsModule } from 'src/modules/permissions/module.module';
 import { AccountModule } from 'src/modules/account/module.module';
 import { CommunicationModule } from 'src/modules/communication/module.module';
+import { RolesModule } from 'src/modules/roles/module.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { CommunicationModule } from 'src/modules/communication/module.module';
     OrganizationsModule,
     KeysModule,
     CommunicationModule,
+    RolesModule,
   ],
   controllers,
   providers: services,

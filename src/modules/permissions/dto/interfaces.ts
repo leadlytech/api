@@ -1,4 +1,4 @@
-import { Organization } from '@prisma/client';
+import { Permission } from '@prisma/client';
 import { IResponse, TList } from 'src/interfaces';
 import { EOriginRoutes } from 'src/routes';
 
@@ -7,7 +7,7 @@ import { CreateDto, ListDto, FindDto, UpdateDto, RemoveDto } from './classes';
 export const origin = EOriginRoutes.PERMISSIONS;
 
 // Default
-export interface IDefault extends Organization {}
+export type IDefault = Permission;
 
 // Create
 export type TCreateRequest = CreateDto;
