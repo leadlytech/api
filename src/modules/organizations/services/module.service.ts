@@ -43,10 +43,6 @@ export class ModuleService extends BaseModuleService {
 
   async list(txn: ITxn): Promise<TListResponse> {
     try {
-      return {
-        statusCode: HttpStatus.NOT_IMPLEMENTED,
-      };
-
       const { props, query } = this.extract<any, TListRequest, any>(txn);
       const payload = await this.helperService.list(props, query);
 

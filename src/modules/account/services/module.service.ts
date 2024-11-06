@@ -26,7 +26,7 @@ export class ModuleService extends BaseModuleService {
       delete record['phoneNumberUpdate'];
 
       return {
-        statusCode: HttpStatus.CREATED,
+        statusCode: HttpStatus.OK,
         payload: record,
       };
     } catch (err) {

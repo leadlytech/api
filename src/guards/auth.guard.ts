@@ -16,6 +16,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CacheService, ErrorService } from 'src/shared/services';
 import { createRecordId, TEnv } from 'src/utils';
 
+interface IPermission {
+  p: string;
+  o?: string;
+}
+
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
@@ -26,7 +31,7 @@ export class AuthGuard implements CanActivate {
     private readonly prisma: PrismaService,
     private readonly cacheService: CacheService,
   ) {}
-  private origin = 'AuthGuard';
+  private origin = 'authGuard';
   private logger = new Logger(this.origin);
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -156,17 +161,48 @@ export class AuthGuard implements CanActivate {
         });
       }
 
-      let permissions: string[] = [];
+      // Obtém todas as permissões relativas à entidade autenticada
+      const permissions = await this.getPermissions(props);
+
+      for (const permission of permissions) {
+        if (
+          permission['p'] === permissionConfig &&
+          [undefined, organizationId].includes(permission['o'])
+        ) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (err) {
+      this.errorService.process(err, this.origin, false);
+      return false;
+    }
+  }
+
+  private verifyRequiredParameters(params: string[]) {
+    return params.every((params) => params);
+  }
+
+  private async getPermissions(props: IProps): Promise<IPermission[]> {
+    try {
+      let permissions: Array<IPermission> = await this.cacheService.get(
+        this.origin,
+        `${props.auth.type}:${props.auth.entityId}`,
+      );
+
+      if (permissions) return permissions;
+      permissions = [];
 
       switch (props.auth.type) {
         case EAuthType.USER:
-          const memberFound = await this.prisma.member.findFirst({
+          const members = await this.prisma.member.findMany({
             where: {
               userId: props.auth.entityId,
-              organizationId,
             },
             select: {
               owner: true,
+              organizationId: true,
               MemberRole: {
                 select: {
                   role: {
@@ -187,22 +223,50 @@ export class AuthGuard implements CanActivate {
             },
           });
 
-          console.log(memberFound);
-
-          if (!memberFound) {
-            return false;
-          }
-
-          if (memberFound.owner) {
-            return true;
-          }
-
-          for (const role of memberFound.MemberRole) {
-            for (const permission of role.role.RolePermission) {
-              permissions.push(permission.permission.value);
+          for (const member of members) {
+            for (const role of member.MemberRole) {
+              for (const permission of role.role.RolePermission) {
+                permissions.push({
+                  p: permission.permission.value,
+                  o: member.organizationId,
+                });
+              }
             }
           }
+
+          const userPermissions = await this.prisma.userPermission.findMany({
+            where: {
+              userId: props.auth.entityId,
+            },
+            select: {
+              permission: {
+                select: {
+                  value: true,
+                },
+              },
+            },
+          });
+
+          for (const userPermission of userPermissions) {
+            permissions.push({
+              p: userPermission.permission.value,
+            });
+          }
+          break;
         case EAuthType.API:
+          const key = await this.prisma.key.findFirstOrThrow({
+            where: {
+              id: props.auth.entityId,
+            },
+            select: {
+              organization: {
+                select: {
+                  id: true,
+                },
+              },
+            },
+          });
+
           const keyPermissions = await this.prisma.keyPermission.findMany({
             where: {
               keyId: props.auth.entityId,
@@ -215,20 +279,27 @@ export class AuthGuard implements CanActivate {
               },
             },
           });
+
           permissions = keyPermissions.map((keyPermission) => {
-            return keyPermission.permission.value;
+            return {
+              p: keyPermission.permission.value,
+              o: key.organization.id,
+            };
           });
           break;
       }
 
-      return false;
+      await this.cacheService.set(
+        this.origin,
+        `${props.auth.type}:${props.auth.entityId}`,
+        permissions,
+        {
+          ttl: 86400, // 1d
+        },
+      );
+      return permissions;
     } catch (err) {
-      this.errorService.process(err, this.origin, false);
-      return false;
+      return [];
     }
-  }
-
-  verifyRequiredParameters(params: string[]) {
-    return params.every((params) => params);
   }
 }
