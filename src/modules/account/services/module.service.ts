@@ -1,8 +1,8 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { Request, Response } from 'express';
 
 import { BaseModuleService, ErrorService } from 'src/shared/services';
 import { HelperService } from './helper.service';
+import { ITxn } from 'src/interfaces';
 
 @Injectable()
 export class ModuleService extends BaseModuleService {
@@ -15,9 +15,9 @@ export class ModuleService extends BaseModuleService {
   private origin = ModuleService.name;
   private logger = new Logger(this.origin);
 
-  async me(req: Request, res: Response): Promise<any> {
+  async me(txn: ITxn): Promise<any> {
     try {
-      const { props } = this.extract<any, any, any>(req, res);
+      const { props } = this.extract<any, any, any>(txn);
       const record = await this.helperService.me(props);
 
       delete record['tenantId'];

@@ -1,5 +1,4 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { Request, Response } from 'express';
 
 import { BaseModuleService, ErrorService } from 'src/shared/services';
 import {
@@ -13,6 +12,7 @@ import {
   TConfirmResponse,
 } from '../dto';
 import { HelperService } from './helper.service';
+import { ITxn } from 'src/interfaces';
 
 @Injectable()
 export class ModuleService extends BaseModuleService {
@@ -40,12 +40,9 @@ export class ModuleService extends BaseModuleService {
     return origin;
   }
 
-  async signUp(req: Request, res: Response): Promise<TSignUpResponse> {
+  async signUp(txn: ITxn): Promise<TSignUpResponse> {
     try {
-      const { body, headers } = this.extract<any, any, TSignUpRequest>(
-        req,
-        res,
-      );
+      const { body, headers } = this.extract<any, any, TSignUpRequest>(txn);
 
       const record = await this.helperService.signUp({
         ...body,
@@ -61,9 +58,9 @@ export class ModuleService extends BaseModuleService {
     }
   }
 
-  async login(req: Request, res: Response): Promise<TLoginResponse> {
+  async login(txn: ITxn): Promise<TLoginResponse> {
     try {
-      const { body, headers } = this.extract<any, any, TLoginRequest>(req, res);
+      const { body, headers } = this.extract<any, any, TLoginRequest>(txn);
       const record = await this.helperService.login({
         ...body,
         origin: this.getOrigin(headers),
@@ -78,12 +75,9 @@ export class ModuleService extends BaseModuleService {
     }
   }
 
-  async verify(req: Request, res: Response): Promise<TVerifyResponse> {
+  async verify(txn: ITxn): Promise<TVerifyResponse> {
     try {
-      const { body, headers } = this.extract<any, any, TVerifyRequest>(
-        req,
-        res,
-      );
+      const { body, headers } = this.extract<any, any, TVerifyRequest>(txn);
       await this.helperService.verify({
         ...body,
         origin: this.getOrigin(headers),
@@ -97,9 +91,9 @@ export class ModuleService extends BaseModuleService {
     }
   }
 
-  async confirm(req: Request, res: Response): Promise<TConfirmResponse> {
+  async confirm(txn: ITxn): Promise<TConfirmResponse> {
     try {
-      const { body } = this.extract<any, any, TConfirmRequest>(req, res);
+      const { body } = this.extract<any, any, TConfirmRequest>(txn);
       const record = await this.helperService.confirm(body);
 
       return {

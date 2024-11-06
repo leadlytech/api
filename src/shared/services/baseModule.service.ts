@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Request, Response } from 'express';
 
-import { IProps } from 'src/interfaces';
+import { IProps, ITxn } from 'src/interfaces';
 
 @Injectable()
 export class BaseModuleService {
@@ -12,8 +12,7 @@ export class BaseModuleService {
     TQuery = Request['query'],
     TBody = Request['body'],
   >(
-    req: Request,
-    res: Response,
+    txn: ITxn,
   ): {
     req: Request;
     props: IProps;
@@ -23,6 +22,8 @@ export class BaseModuleService {
     body: TBody;
     res: Response;
   } {
+    const { req, res } = txn;
+
     return {
       req,
       props: req['props'],

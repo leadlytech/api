@@ -1,4 +1,10 @@
 import { HttpStatus } from '@nestjs/common';
+import { Request, Response } from 'express';
+
+export interface ITxn {
+  req: Request;
+  res: Response;
+}
 
 export interface IResponse<T = any> {
   statusCode: number | HttpStatus;

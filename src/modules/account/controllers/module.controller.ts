@@ -15,7 +15,7 @@ export class ModuleController {
     blockAPIKey: true,
   })
   async me(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.me(req, res);
+    const response: IResponse = await this.moduleService.me({ req, res });
     return res.status(response.statusCode).json(response);
   }
 }

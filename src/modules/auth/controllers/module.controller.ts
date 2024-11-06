@@ -10,37 +10,43 @@ import {
   confirmSchema,
 } from '../dto';
 import { IResponse } from 'src/interfaces';
-import { Validate } from 'src/decorators';
+import { BaseModuleController } from 'src/shared/services';
 
 @Controller({ path: origin })
-export class ModuleController {
-  constructor(private readonly moduleService: ModuleService) {}
+export class ModuleController extends BaseModuleController {
+  constructor(private readonly moduleService: ModuleService) {
+    super();
+  }
 
   @Post('signup')
-  @Validate(signUpSchema)
   async signUp(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.signUp(req, res);
+    const response: IResponse = await this.moduleService.signUp(
+      this.validate(req, res, signUpSchema),
+    );
     return res.status(response.statusCode).json(response);
   }
 
   @Post('login')
-  @Validate(loginSchema)
   async login(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.login(req, res);
+    const response: IResponse = await this.moduleService.login(
+      this.validate(req, res, loginSchema),
+    );
     return res.status(response.statusCode).json(response);
   }
 
   @Post('verify')
-  @Validate(verifySchema)
   async verify(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.verify(req, res);
+    const response: IResponse = await this.moduleService.verify(
+      this.validate(req, res, verifySchema),
+    );
     return res.status(response.statusCode).json(response);
   }
 
   @Post('confirm')
-  @Validate(confirmSchema)
   async confirm(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.confirm(req, res);
+    const response: IResponse = await this.moduleService.confirm(
+      this.validate(req, res, confirmSchema),
+    );
     return res.status(response.statusCode).json(response);
   }
 }

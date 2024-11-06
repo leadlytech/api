@@ -1,5 +1,4 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { Request, Response } from 'express';
 
 import { BaseModuleService, ErrorService } from 'src/shared/services';
 import {
@@ -15,6 +14,7 @@ import {
   TUpdateResponse,
 } from '../dto';
 import { HelperService } from './helper.service';
+import { ITxn } from 'src/interfaces';
 
 @Injectable()
 export class ModuleService extends BaseModuleService {
@@ -27,9 +27,9 @@ export class ModuleService extends BaseModuleService {
   private origin = ModuleService.name;
   private logger = new Logger(this.origin);
 
-  async create(req: Request, res: Response): Promise<TCreateResponse> {
+  async create(txn: ITxn): Promise<TCreateResponse> {
     try {
-      const { props, body } = this.extract<any, any, TCreateRequest>(req, res);
+      const { props, body } = this.extract<any, any, TCreateRequest>(txn);
       const record = await this.helperService.create(props, body);
 
       return {
@@ -41,13 +41,13 @@ export class ModuleService extends BaseModuleService {
     }
   }
 
-  async list(req: Request, res: Response): Promise<TListResponse> {
+  async list(txn: ITxn): Promise<TListResponse> {
     try {
       return {
         statusCode: HttpStatus.NOT_IMPLEMENTED,
       };
 
-      const { props, query } = this.extract<any, TListRequest, any>(req, res);
+      const { props, query } = this.extract<any, TListRequest, any>(txn);
       const payload = await this.helperService.list(props, query);
 
       return {
@@ -59,9 +59,9 @@ export class ModuleService extends BaseModuleService {
     }
   }
 
-  async findOne(req: Request, res: Response): Promise<TFindResponse> {
+  async findOne(txn: ITxn): Promise<TFindResponse> {
     try {
-      const { props, params } = this.extract<TFindRequest, any, any>(req, res);
+      const { props, params } = this.extract<TFindRequest, any, any>(txn);
       const record = await this.helperService.findOne(props, params);
 
       delete record['tenantId'];
@@ -75,13 +75,13 @@ export class ModuleService extends BaseModuleService {
     }
   }
 
-  async update(req: Request, res: Response): Promise<TUpdateResponse> {
+  async update(txn: ITxn): Promise<TUpdateResponse> {
     try {
       const { props, params, body } = this.extract<
         Record<'id', string>,
         any,
         TUpdateRequest
-      >(req, res);
+      >(txn);
       await this.helperService.update(props, params.id, body);
 
       return {
@@ -92,12 +92,9 @@ export class ModuleService extends BaseModuleService {
     }
   }
 
-  async remove(req: Request, res: Response): Promise<TRemoveResponse> {
+  async remove(txn: ITxn): Promise<TRemoveResponse> {
     try {
-      const { props, params } = this.extract<TRemoveRequest, any, any>(
-        req,
-        res,
-      );
+      const { props, params } = this.extract<TRemoveRequest, any, any>(txn);
       await this.helperService.remove(props, params);
 
       return {

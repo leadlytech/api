@@ -11,52 +11,60 @@ import {
   updateSchema,
 } from '../dto';
 import { EAction, IResponse } from 'src/interfaces';
-import { Validate, Auth, Permission } from 'src/decorators';
+import { Auth, Permission } from 'src/decorators';
+import { BaseModuleController } from 'src/shared/services';
 
 @Auth({
   blockAPIKey: true,
 })
 @Controller({ path: `organizations/:organizationId/${origin}` })
-export class ModuleController {
-  constructor(private readonly moduleService: ModuleService) {}
+export class ModuleController extends BaseModuleController {
+  constructor(private readonly moduleService: ModuleService) {
+    super();
+  }
 
   @Post()
   @Permission(`${origin}:${EAction.CREATE}`)
-  @Validate(createSchema)
   async create(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.create(req, res);
+    const response: IResponse = await this.moduleService.create(
+      this.validate(req, res, createSchema),
+    );
     return res.status(response.statusCode).json(response);
   }
 
   @Get()
   @Permission(`${origin}:${EAction.READ}`)
-  @Validate(listSchema)
   async list(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.list(req, res);
+    const response: IResponse = await this.moduleService.list(
+      this.validate(req, res, listSchema),
+    );
     return res.status(response.statusCode).json(response);
   }
 
   @Get(':id')
   @Permission(`${origin}:${EAction.READ}`)
-  @Validate(findSchema)
   async findOne(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.findOne(req, res);
+    const response: IResponse = await this.moduleService.findOne(
+      this.validate(req, res, findSchema),
+    );
     return res.status(response.statusCode).json(response);
   }
 
   @Patch(':id')
   @Permission(`${origin}:${EAction.UPDATE}`)
-  @Validate(updateSchema, 'body')
   async update(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.update(req, res);
+    const response: IResponse = await this.moduleService.update(
+      this.validate(req, res, updateSchema),
+    );
     return res.status(response.statusCode).json(response);
   }
 
   @Delete(':id')
   @Permission(`${origin}:${EAction.DELETE}`)
-  @Validate(removeSchema)
   async remove(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.remove(req, res);
+    const response: IResponse = await this.moduleService.remove(
+      this.validate(req, res, removeSchema),
+    );
     return res.status(response.statusCode).json(response);
   }
 }
