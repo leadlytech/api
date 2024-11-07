@@ -6,6 +6,7 @@ import {
   createSchema,
   findSchema,
   listSchema,
+  myOrgSchema,
   origin,
   removeSchema,
   updateSchema,
@@ -32,6 +33,14 @@ export class ModuleController extends BaseModuleController {
     return res.status(response.statusCode).json(response);
   }
 
+  @Post('me')
+  async myOrg(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
+    const response: IResponse = await this.moduleService.myOrg(
+      this.validate(req, res, myOrgSchema),
+    );
+    return res.status(response.statusCode).json(response);
+  }
+
   @Get()
   @Permission(`${origin}:${EAction.READ}`)
   async list(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
@@ -41,7 +50,7 @@ export class ModuleController extends BaseModuleController {
     return res.status(response.statusCode).json(response);
   }
 
-  @Get(':id')
+  @Get(':organizationId')
   @Permission(`${origin}:${EAction.READ}`)
   async findOne(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.findOne(
@@ -50,8 +59,8 @@ export class ModuleController extends BaseModuleController {
     return res.status(response.statusCode).json(response);
   }
 
-  @Patch(':id')
-  @Permission(`${origin}:${EAction.UPDATE}`)
+  @Patch(':organizationId')
+  @Permission(`${origin}:${EAction.UPDATE}`, false)
   async update(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.update(
       this.validate(req, res, updateSchema),
@@ -59,8 +68,8 @@ export class ModuleController extends BaseModuleController {
     return res.status(response.statusCode).json(response);
   }
 
-  @Delete(':id')
-  @Permission(`${origin}:${EAction.DELETE}`)
+  @Delete(':organizationId')
+  @Permission(`${origin}:${EAction.DELETE}`, false)
   async remove(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.remove(
       this.validate(req, res, removeSchema),

@@ -24,6 +24,11 @@ export interface IAuthConfig {
   blockAPIKey?: boolean;
 }
 
+export interface IPermissionConfig {
+  key: string;
+  restrict?: boolean;
+}
+
 export enum EAction {
   MANAGE = 'manage',
   CREATE = 'create',

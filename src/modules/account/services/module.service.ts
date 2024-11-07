@@ -3,7 +3,6 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { BaseModuleService, ErrorService } from 'src/shared/services';
 import { HelperService } from './helper.service';
 import { ITxn } from 'src/interfaces';
-import { TNewOrgRequest } from '../dto';
 
 @Injectable()
 export class ModuleService extends BaseModuleService {
@@ -25,20 +24,6 @@ export class ModuleService extends BaseModuleService {
       delete record['password'];
       delete record['emailUpdate'];
       delete record['phoneNumberUpdate'];
-
-      return {
-        statusCode: HttpStatus.OK,
-        payload: record,
-      };
-    } catch (err) {
-      this.errorService.process(err, this.origin);
-    }
-  }
-
-  async newOrg(txn: ITxn): Promise<any> {
-    try {
-      const { props, body } = this.extract<any, any, TNewOrgRequest>(txn);
-      const record = await this.helperService.newOrg(props, body);
 
       return {
         statusCode: HttpStatus.OK,

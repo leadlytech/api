@@ -8,7 +8,13 @@ import {
   BaseHelperService,
 } from 'src/shared/services';
 
-import { EFieldType, EPaginationMode, IProps, TList } from 'src/interfaces';
+import {
+  EAuthType,
+  EFieldType,
+  EPaginationMode,
+  IProps,
+  TList,
+} from 'src/interfaces';
 import {
   IDefault,
   origin,
@@ -20,6 +26,7 @@ import {
 } from '../dto';
 import { createRecordId } from 'src/utils';
 import { EMemberStatus } from '@prisma/client';
+import { EOriginRoutes } from 'src/routes';
 
 @Injectable()
 export class HelperService extends BaseHelperService {
@@ -55,7 +62,7 @@ export class HelperService extends BaseHelperService {
             Member: {
               create: {
                 id: newMemberId,
-                userId: props.auth.entityId,
+                userId: data.userId,
                 status: EMemberStatus.ACTIVE,
                 owner: true,
               },
@@ -118,6 +125,8 @@ export class HelperService extends BaseHelperService {
         return record;
       });
 
+      await this.clearCacheForUsers([data.userId]);
+
       this.logger.log(`New "${this.origin}" created (ID: ${record.id})`);
       this.eventService.create(this.origin, record);
 
@@ -177,13 +186,13 @@ export class HelperService extends BaseHelperService {
       let record: Partial<RType> = null;
 
       if (!renew) {
-        record = await this.cacheService.get(this.origin, data.id);
+        record = await this.cacheService.get(this.origin, data.organizationId);
       }
 
       if (!record) {
         record = await this.repository.findUniqueOrThrow({
           where: {
-            id: data.id,
+            id: data.organizationId,
             tenantId: props.tenantId,
           },
         });
@@ -231,14 +240,49 @@ export class HelperService extends BaseHelperService {
       this.logger.log(`Deleting a "${this.origin}"`);
       const record = await this.repository.delete({
         where: {
-          id: data.id,
+          id: data.organizationId,
           tenantId: props.tenantId,
         },
+        select: {
+          id: true,
+          Member: {
+            select: {
+              userId: true,
+            },
+          },
+        },
       });
+
+      await this.clearCacheForUsers(
+        record.Member.map((member) => member.userId),
+      );
 
       this.logger.log(`One "${this.origin}" was deleted (ID: ${record.id})`);
       this.eventService.remove(this.origin, record);
       await this.cacheService.del(this.origin, record.id);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async clearCacheForUsers(userIds: string[]): Promise<void> {
+    try {
+      userIds.map(async (userId) => {
+        /**
+         * Apaga as permissões salvas em cache do usuário para o qual a organização foi criada,
+         * assim fazendo com que elas sejam renovadas na próxima solicitação
+         */
+        await this.cacheService.del(
+          EOriginRoutes.AUTH_GUARD,
+          `entityPermissions:${EAuthType.USER}:${userId}`,
+        );
+
+        // Apaga as relações de membro do cache para renovação futura
+        await this.cacheService.del(
+          EOriginRoutes.MEMBERS,
+          `relations:${userId}`,
+        );
+      });
     } catch (err) {
       throw err;
     }

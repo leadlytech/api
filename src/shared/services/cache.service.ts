@@ -143,16 +143,18 @@ export class CacheService {
 
   async reset() {
     try {
-      return this.delByPattern(`${process.env.SERVER_NAME}:cache:*`);
+      return this.delByPattern('*');
     } catch (err) {
       this.logger.error('Error resetting cache', err);
       return false;
     }
   }
 
-  async delByPattern(pattern: string) {
+  async delByPattern(origin: string, pattern?: string) {
     try {
-      const stream = this.redis.scanStream({ match: pattern });
+      const stream = this.redis.scanStream({
+        match: this.formatKey(origin, pattern),
+      });
       stream.on('data', async (keys: string[]) => {
         if (keys.length) {
           const pipeline = this.redis.pipeline();
@@ -174,7 +176,8 @@ export class CacheService {
     }
   }
 
-  private formatKey(origin: string, key: string) {
-    return `${process.env.SERVER_NAME}:cache:${origin}:${key}`;
+  private formatKey(origin: string, key?: string) {
+    if (key) return `${process.env.SERVER_NAME}:cache:${origin}:${key}`;
+    return `${process.env.SERVER_NAME}:cache:${origin}`;
   }
 }

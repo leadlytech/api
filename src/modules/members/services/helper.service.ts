@@ -40,7 +40,7 @@ export class HelperService extends BaseHelperService {
   ): Promise<Partial<IDefault>> {
     try {
       this.logger.log(`Creating a new "${this.origin}"`);
-      const verifyUser = await this.prisma.user.findFirst({
+      const verifyUser = await this.prisma.user.findFirstOrThrow({
         where: {
           email: data.email,
         },
@@ -59,7 +59,7 @@ export class HelperService extends BaseHelperService {
             ? {
                 user: {
                   connect: {
-                    id: verifyUser?.id,
+                    id: verifyUser.id,
                   },
                 },
               }
@@ -76,8 +76,10 @@ export class HelperService extends BaseHelperService {
         },
       });
 
-      this.logger.log(`New "${this.origin}" created (ID: ${record.id})`);
+      await this.cacheService.del(this.origin, `relations:${verifyUser.id}`);
+
       this.eventService.create(this.origin, record);
+      this.logger.log(`New "${this.origin}" created (ID: ${record.id})`);
 
       return record;
     } catch (err) {
@@ -136,11 +138,38 @@ export class HelperService extends BaseHelperService {
     }
   }
 
-  async findOne(
-    props: IProps,
-    data: TFindRequest,
-    renew = false,
-  ): Promise<Partial<IDefault>> {
+  async findUserMemberships(props: IProps, userId: string) {
+    try {
+      let record = await this.cacheService.get(
+        this.origin,
+        `relations:${userId}`,
+      );
+
+      if (!record) {
+        const members = await this.prisma.member.findMany({
+          where: {
+            userId,
+          },
+          select: {
+            id: true,
+            organizationId: true,
+          },
+        });
+
+        record = await Promise.all(
+          members.map((member) => this.findOne(props, member, true)),
+        ).then((values) => values);
+
+        await this.cacheService.set(this.origin, `relations:${userId}`, record);
+      }
+
+      return record;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async findOne(props: IProps, data: TFindRequest, renew = false) {
     try {
       this.logger.log(`Retrieving a single "${this.origin}"`);
 
@@ -169,6 +198,12 @@ export class HelperService extends BaseHelperService {
               owner: true,
               createdAt: true,
               updatedAt: true,
+              organization: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           });
 
@@ -239,9 +274,10 @@ export class HelperService extends BaseHelperService {
         data,
       });
 
-      this.logger.log(`One "${this.origin}" was updated (ID: ${record.id})`);
       this.eventService.update(this.origin, record);
       await this.cacheService.del(this.origin, record.id);
+      await this.cacheService.del(this.origin, `relations:${record.userId}`);
+      this.logger.log(`One "${this.origin}" was updated (ID: ${record.id})`);
 
       return record;
     } catch (err) {
@@ -281,9 +317,10 @@ export class HelperService extends BaseHelperService {
         },
       });
 
-      this.logger.log(`One "${this.origin}" was deleted (ID: ${record.id})`);
       this.eventService.remove(this.origin, record);
       await this.cacheService.del(this.origin, record.id);
+      await this.cacheService.del(this.origin, `relations:${record.userId}`);
+      this.logger.log(`One "${this.origin}" was deleted (ID: ${record.id})`);
     } catch (err) {
       throw err;
     }

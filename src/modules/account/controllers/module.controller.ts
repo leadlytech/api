@@ -1,8 +1,8 @@
-import { Controller, Res, Req, Get, Post } from '@nestjs/common';
+import { Controller, Res, Req, Get } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 import { ModuleService } from '../services';
-import { newOrgSchema, origin } from '../dto';
+import { origin } from '../dto';
 import { IResponse } from 'src/interfaces';
 import { Auth } from 'src/decorators';
 import { BaseModuleController } from 'src/shared/services';
@@ -19,14 +19,6 @@ export class ModuleController extends BaseModuleController {
   @Get()
   async me(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.me({ req, res });
-    return res.status(response.statusCode).json(response);
-  }
-
-  @Post('organizations')
-  async newOrg(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.newOrg(
-      this.validate(req, res, newOrgSchema),
-    );
     return res.status(response.statusCode).json(response);
   }
 }

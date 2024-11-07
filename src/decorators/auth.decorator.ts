@@ -9,9 +9,12 @@ export function Auth(config?: IAuthConfig) {
   );
 }
 
-export function Permission(value: string) {
+export function Permission(key: string, restrict?: boolean) {
   return applyDecorators(
-    SetMetadata('permissionConfig', value),
+    SetMetadata('permissionConfig', {
+      key,
+      restrict,
+    }),
     // UseGuards(AuthGuard),
   );
 }

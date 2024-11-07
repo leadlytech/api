@@ -24,7 +24,7 @@ export class ModuleController extends BaseModuleController {
   }
 
   @Post()
-  @Permission(`${origin}:${EAction.CREATE}`)
+  @Permission(`${origin}:${EAction.CREATE}`, false)
   async create(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.create(
       this.validate(req, res, createSchema),
@@ -33,7 +33,7 @@ export class ModuleController extends BaseModuleController {
   }
 
   @Get()
-  @Permission(`${origin}:${EAction.READ}`)
+  @Permission(`${origin}:${EAction.READ}`, false)
   async list(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.list(
       this.validate(req, res, listSchema),
@@ -42,7 +42,7 @@ export class ModuleController extends BaseModuleController {
   }
 
   @Get(':id')
-  @Permission(`${origin}:${EAction.READ}`)
+  @Permission(`${origin}:${EAction.READ}`, false)
   async findOne(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.findOne(
       this.validate(req, res, findSchema),
@@ -51,7 +51,7 @@ export class ModuleController extends BaseModuleController {
   }
 
   @Patch(':id')
-  @Permission(`${origin}:${EAction.UPDATE}`)
+  @Permission(`${origin}:${EAction.UPDATE}`, false)
   async update(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.update(
       this.validate(req, res, updateSchema),
@@ -60,7 +60,7 @@ export class ModuleController extends BaseModuleController {
   }
 
   @Delete(':id')
-  @Permission(`${origin}:${EAction.DELETE}`)
+  @Permission(`${origin}:${EAction.DELETE}`, false)
   async remove(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.remove(
       this.validate(req, res, removeSchema),

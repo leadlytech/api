@@ -7,12 +7,19 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { Permission, User } from '@prisma/client';
 
 import { Request } from 'express';
 
-// Interfaces
-import { IProps, IAuthConfig, JwtDto, EAuthType } from 'src/interfaces';
+import {
+  IProps,
+  IAuthConfig,
+  JwtDto,
+  EAuthType,
+  IPermissionConfig,
+} from 'src/interfaces';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { EOriginRoutes } from 'src/routes';
 import { CacheService, ErrorService } from 'src/shared/services';
 import { createRecordId, TEnv } from 'src/utils';
 
@@ -31,7 +38,7 @@ export class AuthGuard implements CanActivate {
     private readonly prisma: PrismaService,
     private readonly cacheService: CacheService,
   ) {}
-  private origin = 'authGuard';
+  private origin = EOriginRoutes.AUTH_GUARD;
   private logger = new Logger(this.origin);
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -40,7 +47,7 @@ export class AuthGuard implements CanActivate {
       const authConfig: IAuthConfig =
         this.reflector.get('authConfig', context.getHandler()) ||
         this.reflector.get('authConfig', context.getClass());
-      const permissionConfig: string | undefined =
+      const permissionConfig: IPermissionConfig | undefined =
         this.reflector.get('permissionConfig', context.getHandler()) ||
         this.reflector.get('permissionConfig', context.getClass());
       const authorization = request.headers['authorization'] as string;
@@ -84,12 +91,30 @@ export class AuthGuard implements CanActivate {
           return false;
         }
 
-        const user = await this.prisma.user.findUnique({
-          where: { id: decoded.userId },
-          select: {
-            tenantId: true,
-          },
-        });
+        // Busca o respectivo usuário nos dados do cache
+        let user = await this.cacheService.get<Partial<User>>(
+          this.origin,
+          `user:${decoded.userId}`,
+        );
+
+        /**
+         * Se o usuário não for encontrado ele é buscado no banco de dados
+         * e então os dados são cacheados (Mesmo se forem nulos)
+         */
+        if (!user) {
+          user = await this.prisma.user.findUnique({
+            where: { id: decoded.userId },
+            select: {
+              tenantId: true,
+            },
+          });
+
+          await this.cacheService.set(
+            this.origin,
+            `user:${decoded.userId}`,
+            user,
+          );
+        }
 
         if (user) {
           props = {
@@ -142,22 +167,86 @@ export class AuthGuard implements CanActivate {
       }
 
       // Se uma permissão é necessária, então primeiro é verificado se ela está registrada
-      const verifyPermission = await this.prisma.permission.findFirst({
-        where: {
-          value: permissionConfig,
-          tenantId: props.tenantId,
-        },
-      });
 
+      // Primeiro é verificado se a permissão existe no cache
+      let verifyPermission = await this.cacheService.get<Permission>(
+        this.origin,
+        `cachedPermission:${permissionConfig.key}`,
+      );
+
+      /**
+       * Se a permissão não estiver em cache, ela é buscada no banco
+       * e se localizada é então cacheada
+       */
       if (!verifyPermission) {
-        await this.prisma.permission.create({
-          data: {
-            id: createRecordId(),
+        verifyPermission = await this.prisma.permission.findFirst({
+          where: {
+            value: permissionConfig.key,
             tenantId: props.tenantId,
-            name: permissionConfig,
-            value: permissionConfig,
-            restrict: true,
           },
+        });
+      }
+
+      /**
+       * Se a permissão do sistema não está nem no cache
+       * e nem no banco ela não existe e então é criada
+       */
+      if (!verifyPermission) {
+        /**
+         * Pra uma nova role ser adicionada no sistema, isso deve ser feito de modo
+         * a conceder a permissão criada às organizações caso ela seja desse tipo.
+         * Isso é definido pelo parâmetro "restrict", se verdadeiro apenas os proprietários
+         * do sistema podem mudar, se falso então pode ser gerido pelas organizações
+         */
+        await this.prisma.$transaction(async (txn) => {
+          const restrict = permissionConfig.restrict ?? true;
+
+          const newPermission = await txn.permission.create({
+            data: {
+              id: createRecordId(),
+              tenantId: props.tenantId,
+              name: permissionConfig.key,
+              value: permissionConfig.key,
+              restrict,
+            },
+          });
+
+          if (!restrict) {
+            const rolesToConnect = await txn.role.findMany({
+              where: {
+                selfManaged: true,
+                organization: {
+                  tenantId: props.tenantId,
+                },
+              },
+              select: {
+                id: true,
+              },
+            });
+
+            await txn.rolePermission.createMany({
+              data: rolesToConnect.map((role) => {
+                return {
+                  roleId: role.id,
+                  permissionId: newPermission.id,
+                };
+              }),
+            });
+
+            // Apaga os dados de permissões em cache para que possam renovados devido à adição
+
+            // Deleção dos dados em cache de "membros"
+            await this.cacheService.delByPattern(
+              EOriginRoutes.MEMBERS,
+              `relations:*`,
+            );
+
+            // Deleção dos dados em cache de "permissões" do guard
+            await this.cacheService.delByPattern(
+              this.origin,
+              `entityPermissions:${props.auth.type}:*`,
+            );
+          }
         });
       }
 
@@ -166,7 +255,7 @@ export class AuthGuard implements CanActivate {
 
       for (const permission of permissions) {
         if (
-          permission['p'] === permissionConfig &&
+          permission['p'] === permissionConfig.key &&
           [undefined, organizationId].includes(permission['o'])
         ) {
           return true;
@@ -184,7 +273,7 @@ export class AuthGuard implements CanActivate {
     try {
       let permissions: Array<IPermission> = await this.cacheService.get(
         this.origin,
-        `${props.auth.type}:${props.auth.entityId}`,
+        `entityPermissions:${props.auth.type}:${props.auth.entityId}`,
       );
 
       if (permissions) return permissions;
@@ -287,7 +376,7 @@ export class AuthGuard implements CanActivate {
 
       await this.cacheService.set(
         this.origin,
-        `${props.auth.type}:${props.auth.entityId}`,
+        `entityPermissions:${props.auth.type}:${props.auth.entityId}`,
         permissions,
         {
           ttl: 86400, // 1d
@@ -295,6 +384,7 @@ export class AuthGuard implements CanActivate {
       );
       return permissions;
     } catch (err) {
+      this.logger.error(err);
       return [];
     }
   }

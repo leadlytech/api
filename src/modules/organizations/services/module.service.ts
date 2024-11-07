@@ -41,6 +41,23 @@ export class ModuleService extends BaseModuleService {
     }
   }
 
+  async myOrg(txn: ITxn): Promise<TCreateResponse> {
+    try {
+      const { props, body } = this.extract<any, any, TCreateRequest>(txn);
+      const record = await this.helperService.create(props, {
+        userId: props.auth.entityId,
+        name: body.name,
+      });
+
+      return {
+        statusCode: HttpStatus.CREATED,
+        payload: record,
+      };
+    } catch (err) {
+      this.errorService.process(err, this.origin);
+    }
+  }
+
   async list(txn: ITxn): Promise<TListResponse> {
     try {
       const { props, query } = this.extract<any, TListRequest, any>(txn);
@@ -74,11 +91,11 @@ export class ModuleService extends BaseModuleService {
   async update(txn: ITxn): Promise<TUpdateResponse> {
     try {
       const { props, params, body } = this.extract<
-        Record<'id', string>,
+        Record<'organizationId', string>,
         any,
         TUpdateRequest
       >(txn);
-      await this.helperService.update(props, params.id, body);
+      await this.helperService.update(props, params.organizationId, body);
 
       return {
         statusCode: HttpStatus.OK,

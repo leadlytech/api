@@ -2,18 +2,18 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { PrismaService } from 'src/prisma/prisma.service';
 
-import { origin, TNewOrgRequest } from '../dto';
+import { origin } from '../dto';
 import { IProps } from 'src/interfaces';
 
 import { HelperService as UserHelperService } from 'src/modules/users/services';
-import { HelperService as OrganizationHelperService } from 'src/modules/organizations/services';
+import { HelperService as MemberHelperService } from 'src/modules/members/services';
 
 @Injectable()
 export class HelperService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly userHelperService: UserHelperService,
-    private readonly organizationService: OrganizationHelperService,
+    private readonly memberService: MemberHelperService,
   ) {}
   private origin = origin;
   private logger = new Logger(this.origin);
@@ -25,70 +25,15 @@ export class HelperService {
       const user = await this.userHelperService.findOne(props, {
         id: props.auth.entityId,
       });
-      const members = await this.prisma.member.findMany({
-        where: {
-          userId: props.auth.entityId,
-        },
-        select: {
-          id: true,
-          organizationId: true,
-          status: true,
-          owner: true,
-          createdAt: true,
-          MemberRole: {
-            select: {
-              role: {
-                select: {
-                  id: true,
-                  name: true,
-                  RolePermission: {
-                    select: {
-                      permission: {
-                        select: {
-                          value: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
 
-      members.map((member) => {
-        member['roles'] = member.MemberRole.map((memberRole) => {
-          member['permissions'] = memberRole.role.RolePermission.map(
-            (rolePermission) => rolePermission.permission.value,
-          );
-
-          delete memberRole['role']['RolePermission'];
-          return memberRole.role;
-        });
-        delete member['MemberRole'];
-        return member;
-      });
+      const members = await this.memberService.findUserMemberships(
+        props,
+        props.auth.entityId,
+      );
 
       user['members'] = members;
 
       return user;
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  async newOrg(
-    props: IProps,
-    data: TNewOrgRequest,
-  ): Promise<Record<string, any>> {
-    try {
-      this.logger.log(`Getting me`);
-      const newOrg = await this.organizationService.create(props, {
-        name: data.name,
-      });
-
-      return newOrg;
     } catch (err) {
       throw err;
     }

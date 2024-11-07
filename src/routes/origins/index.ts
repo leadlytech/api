@@ -1,4 +1,5 @@
 export enum EOriginRoutes {
+  AUTH_GUARD = 'authGuard',
   ACCOUNT = 'account',
   AUTH = 'auth',
   KEYS = 'keys',
