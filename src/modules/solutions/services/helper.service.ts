@@ -1,8 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EOfferStatus } from '@prisma/client';
 
 import { PrismaService } from 'src/prisma/prisma.service';
-
 import {
   EventService,
   CacheService,
@@ -10,16 +8,16 @@ import {
   BaseHelperService,
 } from 'src/shared/services';
 
-import { EFieldType, EPaginationMode, TList } from 'src/interfaces';
+import { EFieldType, EPaginationMode, IProps, TList } from 'src/interfaces';
 import {
   IDefault,
+  origin,
   TCreateRequest,
   TFindRequest,
   TListRequest,
   TRemoveRequest,
   TUpdateRequest,
 } from '../dto';
-import { EOriginRoutes } from 'src/routes';
 import { createRecordId } from 'src/utils';
 
 @Injectable()
@@ -32,21 +30,23 @@ export class HelperService extends BaseHelperService {
   ) {
     super(searchService);
   }
-  private origin = EOriginRoutes.TENANTS;
+  private origin = origin;
   private logger = new Logger(this.origin);
-  private repository = this.prisma.tenant;
+  private repository = this.prisma.solution;
 
-  async create(data: TCreateRequest): Promise<Partial<IDefault>> {
+  async create(
+    props: IProps,
+    data: TCreateRequest,
+  ): Promise<Partial<IDefault>> {
     try {
       this.logger.log(`Creating a new "${this.origin}"`);
       const record = await this.repository.create({
         data: {
           id: createRecordId(),
+          tenantId: props.tenantId,
+          type: data.type,
           name: data.name,
-          domain: data.domain,
-          smtp: data.smtp,
-          smsDevKey: data.smsDevKey,
-          pushInPayToken: data.pushInPayToken,
+          description: data.description,
         },
         select: {
           id: true,
@@ -63,6 +63,7 @@ export class HelperService extends BaseHelperService {
   }
 
   async list(
+    props: IProps,
     data: TListRequest,
     restrictPaginationToMode?: EPaginationMode,
   ): Promise<TList<Partial<IDefault>>> {
@@ -82,10 +83,14 @@ export class HelperService extends BaseHelperService {
           id: EFieldType.STRING,
         },
         sortFields: ['id'],
+        mergeWhere: {
+          tenantId: props.tenantId,
+        },
         select: {
           id: true,
+          type: true,
           name: true,
-          domain: true,
+          description: true,
           createdAt: true,
         },
       });
@@ -96,82 +101,11 @@ export class HelperService extends BaseHelperService {
     }
   }
 
-  async public(data: TFindRequest, renew = false): Promise<Partial<IDefault>> {
-    try {
-      this.logger.log(`Retrieving a single public "${this.origin}"`);
-
-      type R = typeof this.repository;
-      type RType = NonNullable<Awaited<ReturnType<R['findUniqueOrThrow']>>>;
-      let record: Partial<RType> = null;
-
-      if (!renew) {
-        record = await this.cacheService.get(`${this.origin}:public`, data.id);
-      }
-
-      if (!record) {
-        record = await this.repository.findFirstOrThrow({
-          where: {
-            domain: data.id,
-          },
-          select: {
-            id: true,
-            name: true,
-            domain: true,
-            Solution: {
-              select: {
-                id: true,
-                type: true,
-                name: true,
-                description: true,
-                Offer: {
-                  where: {
-                    status: EOfferStatus.ACTIVE,
-                  },
-                  select: {
-                    id: true,
-                    name: true,
-                    description: true,
-                    amount: true,
-                    recurrence: true,
-                    Benefit: {
-                      select: {
-                        value: true,
-                        resource: {
-                          select: {
-                            key: true,
-                            name: true,
-                            description: true,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        });
-
-        if (!renew) {
-          await this.cacheService.set(
-            `${this.origin}:public`,
-            record.id,
-            record,
-          );
-        }
-      }
-
-      this.logger.log(
-        `One public "${this.origin}" was retrieved (ID: ${record.id})`,
-      );
-
-      return record;
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  async findOne(data: TFindRequest, renew = false): Promise<Partial<IDefault>> {
+  async findOne(
+    props: IProps,
+    data: TFindRequest,
+    renew = false,
+  ): Promise<Partial<IDefault>> {
     try {
       this.logger.log(`Retrieving a single "${this.origin}"`);
 
@@ -185,7 +119,10 @@ export class HelperService extends BaseHelperService {
 
       if (!record) {
         record = await this.repository.findUniqueOrThrow({
-          where: { id: data.id },
+          where: {
+            id: data.id,
+            tenantId: props.tenantId,
+          },
         });
 
         if (!renew) {
@@ -201,25 +138,19 @@ export class HelperService extends BaseHelperService {
     }
   }
 
-  async update(id: string, data: TUpdateRequest): Promise<Partial<IDefault>> {
+  async update(
+    props: IProps,
+    id: string,
+    data: TUpdateRequest,
+  ): Promise<Partial<IDefault>> {
     try {
       this.logger.log(`Updating a "${this.origin}"`);
       const record = await this.repository.update({
-        where: { id },
-        data: {
-          name: data.name,
-          domain: data.domain,
-          smsDevKey: data.smsDevKey,
-          pushInPayToken: data.pushInPayToken,
-          ...(data.smtp
-            ? {
-                smtpHost: data.smtp.host,
-                smtpPort: data.smtp.port,
-                smtpUser: data.smtp.user,
-                smtpPass: data.smtp.pass,
-              }
-            : undefined),
+        where: {
+          id,
+          tenantId: props.tenantId,
         },
+        data,
       });
 
       this.eventService.update(this.origin, record);
@@ -232,11 +163,14 @@ export class HelperService extends BaseHelperService {
     }
   }
 
-  async remove(data: TRemoveRequest): Promise<void> {
+  async remove(props: IProps, data: TRemoveRequest): Promise<void> {
     try {
       this.logger.log(`Deleting a "${this.origin}"`);
       const record = await this.repository.delete({
-        where: { id: data.id },
+        where: {
+          id: data.id,
+          tenantId: props.tenantId,
+        },
       });
 
       this.eventService.remove(this.origin, record);

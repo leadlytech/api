@@ -27,7 +27,7 @@ model Tenant {
   Organization   Organization[]
   Resource       Resource[]
   Permission     Permission[]
-  Service        Service[]
+  Solution       Solution[]
   Link           Link[]
 
   @@map("tenants")
@@ -54,23 +54,24 @@ model Permission {
 
 // # GESTÃO DOS SERVIÇOS DO TENANT
 
-enum EServiceType {
+enum ESolutionType {
+  LINKS // Serviços de links
   FUNNELS // Serviço de funis
 }
 
-model Service {
-  id          String       @unique
+model Solution {
+  id          String        @unique
   tenantId    String
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  type        EServiceType
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  type        ESolutionType
   name        String
   description String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @default(now()) @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
   Offer       Offer[]
 
   @@id([tenantId, type])
-  @@map("services")
+  @@map("solutions")
 }
 
 enum EOfferRecurrence {
@@ -88,8 +89,8 @@ enum EOfferStatus {
 
 model Offer {
   id           String            @id
-  serviceId    String
-  service      Service           @relation(fields: [serviceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  solutionId   String
+  solution     Solution          @relation(fields: [solutionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   status       EOfferStatus      @default(DISABLED)
   name         String
   description  String?

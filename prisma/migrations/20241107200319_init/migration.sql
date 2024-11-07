@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "EServiceType" AS ENUM ('FUNNELS');
+CREATE TYPE "ESolutionType" AS ENUM ('LINKS', 'FUNNELS');
 
 -- CreateEnum
 CREATE TYPE "EOfferRecurrence" AS ENUM ('MONTHLY', 'QUARTERLY', 'SEMMONLY', 'YEARLY');
@@ -66,22 +66,22 @@ CREATE TABLE "permissions" (
 );
 
 -- CreateTable
-CREATE TABLE "services" (
+CREATE TABLE "solutions" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
-    "type" "EServiceType" NOT NULL,
+    "type" "ESolutionType" NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "services_pkey" PRIMARY KEY ("tenantId","type")
+    CONSTRAINT "solutions_pkey" PRIMARY KEY ("tenantId","type")
 );
 
 -- CreateTable
 CREATE TABLE "offers" (
     "id" TEXT NOT NULL,
-    "serviceId" TEXT NOT NULL,
+    "solutionId" TEXT NOT NULL,
     "status" "EOfferStatus" NOT NULL DEFAULT 'DISABLED',
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -391,7 +391,7 @@ CREATE UNIQUE INDEX "tenants_domain_key" ON "tenants"("domain");
 CREATE UNIQUE INDEX "permissions_id_key" ON "permissions"("id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "services_id_key" ON "services"("id");
+CREATE UNIQUE INDEX "solutions_id_key" ON "solutions"("id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "resources_id_key" ON "resources"("id");
@@ -406,10 +406,10 @@ CREATE UNIQUE INDEX "keys_value_key" ON "keys"("value");
 ALTER TABLE "permissions" ADD CONSTRAINT "permissions_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "services" ADD CONSTRAINT "services_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "solutions" ADD CONSTRAINT "solutions_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "offers" ADD CONSTRAINT "offers_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "services"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "offers" ADD CONSTRAINT "offers_solutionId_fkey" FOREIGN KEY ("solutionId") REFERENCES "solutions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "resources" ADD CONSTRAINT "resources_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;

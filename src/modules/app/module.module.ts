@@ -18,6 +18,7 @@ import { envSchema } from 'src/utils';
 import { SharedModule } from 'src/shared/shared.module';
 import { TenantsModule } from 'src/modules/tenants/module.module';
 import { PermissionsModule } from 'src/modules/permissions/module.module';
+import { SolutionsModule } from 'src/modules/solutions/module.module';
 import { UsersModule } from 'src/modules/users/module.module';
 import { AuthModule } from 'src/modules/auth/module.module';
 import { AccountModule } from 'src/modules/account/module.module';
@@ -59,6 +60,7 @@ import { KeysModule } from 'src/modules/keys/module.module';
     SharedModule,
     TenantsModule,
     PermissionsModule,
+    SolutionsModule,
     UsersModule,
     AuthModule,
     AccountModule,
