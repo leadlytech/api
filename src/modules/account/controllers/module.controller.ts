@@ -1,21 +1,32 @@
-import { Controller, Res, Req, Get } from '@nestjs/common';
+import { Controller, Res, Req, Get, Post } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 import { ModuleService } from '../services';
-import { origin } from '../dto';
+import { newOrgSchema, origin } from '../dto';
 import { IResponse } from 'src/interfaces';
 import { Auth } from 'src/decorators';
+import { BaseModuleController } from 'src/shared/services';
 
+@Auth({
+  blockAPIKey: true,
+})
 @Controller({ path: origin })
-export class ModuleController {
-  constructor(private readonly moduleService: ModuleService) {}
+export class ModuleController extends BaseModuleController {
+  constructor(private readonly moduleService: ModuleService) {
+    super();
+  }
 
   @Get()
-  @Auth({
-    blockAPIKey: true,
-  })
   async me(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.me({ req, res });
+    return res.status(response.statusCode).json(response);
+  }
+
+  @Post('organizations')
+  async newOrg(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
+    const response: IResponse = await this.moduleService.newOrg(
+      this.validate(req, res, newOrgSchema),
+    );
     return res.status(response.statusCode).json(response);
   }
 }

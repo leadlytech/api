@@ -6,9 +6,10 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 import { SharedModule } from 'src/shared/shared.module';
 
 import { UsersModule } from 'src/modules/users/module.module';
+import { OrganizationsModule } from 'src/modules/organizations/module.module';
 
 @Module({
-  imports: [PrismaModule, SharedModule, UsersModule],
+  imports: [PrismaModule, SharedModule, UsersModule, OrganizationsModule],
   controllers,
   providers: services,
   exports: publicServices,

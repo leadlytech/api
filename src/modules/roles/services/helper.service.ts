@@ -45,11 +45,6 @@ export class HelperService extends BaseHelperService {
           id: createRecordId(),
           name: data.name,
           description: data.description,
-          tenant: {
-            connect: {
-              id: props.tenantId,
-            },
-          },
           organization: {
             connect: {
               id: data.organizationId,

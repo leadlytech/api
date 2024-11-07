@@ -27,7 +27,6 @@ model Tenant {
   Organization   Organization[]
   Resource       Resource[]
   Permission     Permission[]
-  Role           Role[]
   Service        Service[]
   Link           Link[]
 
@@ -315,8 +314,6 @@ model Charge {
 // Modelo que armazena as roles de organizações
 model Role {
   id             String           @id
-  tenantId       String
-  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   organizationId String
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   name           String

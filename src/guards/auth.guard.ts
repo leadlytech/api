@@ -180,10 +180,6 @@ export class AuthGuard implements CanActivate {
     }
   }
 
-  private verifyRequiredParameters(params: string[]) {
-    return params.every((params) => params);
-  }
-
   private async getPermissions(props: IProps): Promise<IPermission[]> {
     try {
       let permissions: Array<IPermission> = await this.cacheService.get(

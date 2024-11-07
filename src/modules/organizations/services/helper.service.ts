@@ -41,23 +41,81 @@ export class HelperService extends BaseHelperService {
   ): Promise<Partial<IDefault>> {
     try {
       this.logger.log(`Creating a new "${this.origin}"`);
-      const record = await this.repository.create({
-        data: {
-          id: createRecordId(),
-          tenantId: props.tenantId,
-          name: data.name,
-          Member: {
-            create: {
-              id: createRecordId(),
-              userId: props.auth.entityId,
-              status: EMemberStatus.ACTIVE,
-              owner: true,
+
+      const record = await this.prisma.$transaction(async (txn) => {
+        const newOrganizationId = createRecordId();
+        const newMemberId = createRecordId();
+
+        // Cria a organização e conecta o usuário como seu proprietário
+        const record = await txn.organization.create({
+          data: {
+            id: newOrganizationId,
+            tenantId: props.tenantId,
+            name: data.name,
+            Member: {
+              create: {
+                id: newMemberId,
+                userId: props.auth.entityId,
+                status: EMemberStatus.ACTIVE,
+                owner: true,
+              },
             },
           },
-        },
-        select: {
-          id: true,
-        },
+          select: {
+            id: true,
+          },
+        });
+
+        // Obtém as permissões gerenciáveis por organizações
+        const permissions = await txn.permission.findMany({
+          where: {
+            tenantId: props.tenantId,
+            OR: [
+              {
+                restrict: false,
+              },
+              {
+                restrict: null,
+              },
+            ],
+          },
+          select: {
+            id: true,
+            name: true,
+          },
+        });
+
+        // Cria a role padrão e conecta com a organização criada e ao usuário proprietário
+        await txn.role.create({
+          data: {
+            id: createRecordId(),
+            description: '',
+            name: 'ADMIN',
+            selfManaged: true,
+            organization: {
+              connect: {
+                id: newOrganizationId,
+              },
+            },
+            MemberRole: {
+              create: {
+                memberId: newMemberId,
+              },
+            },
+            RolePermission: {
+              createMany: {
+                skipDuplicates: true,
+                data: permissions.map((permission) => {
+                  return {
+                    permissionId: permission.id,
+                  };
+                }),
+              },
+            },
+          },
+        });
+
+        return record;
       });
 
       this.logger.log(`New "${this.origin}" created (ID: ${record.id})`);

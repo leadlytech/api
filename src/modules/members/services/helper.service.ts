@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
@@ -98,50 +98,37 @@ export class HelperService extends BaseHelperService {
       type S = Parameters<R['findMany']>[0]['select'];
       type O = Parameters<R['findMany']>[0]['orderBy'];
 
-      const listed = await this.listing<R, F, W, S, O>(
-        this.repository,
-        data,
-        {
-          logger: this.logger,
-          origin: this.origin,
-          restrictPaginationToMode,
-          searchableFields: {
-            id: EFieldType.STRING,
-            userId: EFieldType.STRING,
+      const listed = await this.listing<R, F, W, S, O>(this.repository, data, {
+        logger: this.logger,
+        origin: this.origin,
+        restrictPaginationToMode,
+        searchableFields: {
+          id: EFieldType.STRING,
+          userId: EFieldType.STRING,
+        },
+        sortFields: ['id'],
+        mergeWhere: {
+          organizationId: data.organizationId,
+          organization: {
+            id: data.organizationId,
+            tenantId: props.tenantId,
           },
-          sortFields: ['id'],
-          mergeWhere: {
-            organizationId: data.organizationId,
-            organization: {
-              id: data.organizationId,
-              tenantId: props.tenantId,
-            },
-          },
-          select: {
-            id: true,
-            status: true,
-            owner: true,
-            createdAt: true,
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
+        },
+        select: {
+          id: true,
+          status: true,
+          owner: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
             },
           },
         },
-        (content) => {
-          for (const contentI in content) {
-            content[contentI] = {
-              ...content[contentI],
-              value: `${content[contentI].value.slice(0, 5)}${'*'.repeat(content[contentI].value.length - 5)}`,
-              disabled: content[contentI].disabled ?? false,
-            };
-          }
-          return content;
-        },
-      );
+      });
 
       return listed;
     } catch (err) {
@@ -166,40 +153,65 @@ export class HelperService extends BaseHelperService {
       }
 
       if (!record) {
-        record = await this.repository.findUniqueOrThrow({
-          where: {
-            id: data.id,
-            organization: {
-              id: data.organizationId,
-              tenantId: props.tenantId,
+        record = await this.prisma.$transaction(async (txn) => {
+          record = await txn.member.findUniqueOrThrow({
+            where: {
+              id: data.id,
+              organization: {
+                id: data.organizationId,
+                tenantId: props.tenantId,
+              },
             },
-          },
-          select: {
-            id: true,
-            userId: true,
-            status: true,
-            owner: true,
-            createdAt: true,
-            updatedAt: true,
-            MemberRole: {
-              select: {
-                role: {
-                  select: {
-                    id: true,
-                    name: true,
+            select: {
+              id: true,
+              userId: true,
+              status: true,
+              owner: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          });
+
+          const memberRoles = await txn.memberRole.findMany({
+            where: {
+              memberId: record.id,
+            },
+            select: {
+              role: {
+                select: {
+                  id: true,
+                  name: true,
+                  RolePermission: {
+                    select: {
+                      permission: {
+                        select: {
+                          value: true,
+                        },
+                      },
+                    },
                   },
                 },
               },
             },
-          },
+          });
+
+          record['roles'] = memberRoles.map((memberRole) => {
+            record['permissions'] = memberRole.role.RolePermission.map(
+              (rolePermission) => rolePermission.permission.value,
+            );
+
+            delete memberRole['role']['RolePermission'];
+            return memberRole.role;
+          });
+          delete record['MemberRole'];
+
+          return record;
         });
 
         if (!renew) {
           await this.cacheService.set(this.origin, record.id, record);
         }
       }
-
-      record['disabled'] = record['disabled'] ?? false;
 
       this.logger.log(`One "${this.origin}" was retrieved (ID: ${record.id})`);
 
@@ -240,6 +252,25 @@ export class HelperService extends BaseHelperService {
   async remove(props: IProps, data: TRemoveRequest): Promise<void> {
     try {
       this.logger.log(`Deleting a "${this.origin}"`);
+      const verify = await this.repository.findUniqueOrThrow({
+        where: {
+          id: data.id,
+        },
+        select: {
+          owner: true,
+        },
+      });
+
+      if (verify.owner) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'ERR_CANNOT_REMOVE_ORGANIZATION_OWNER',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const record = await this.repository.delete({
         where: {
           id: data.id,
