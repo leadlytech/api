@@ -54,7 +54,6 @@ export class HelperService {
         from: `no-reply@${credentials.domain}`,
         ...config,
       });
-      console.log('E-mail enviado: ' + info.response);
       return info;
     } catch (err) {
       throw err;

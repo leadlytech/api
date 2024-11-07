@@ -76,7 +76,7 @@ export class HelperService {
 
   async login(data: TLoginRequest): Promise<Record<string, any>> {
     try {
-      this.logger.log(`Making Login`);
+      this.logger.log(`Making Login...`);
       const tenant = await this.tenantHelperService.public({
         id: data.origin,
       });
@@ -115,6 +115,7 @@ export class HelperService {
 
       const token = await this.generateToken(user.id);
       this.eventService.custom(this.origin, 'login', { userId: user.id });
+      this.logger.log(`Login completed`);
 
       return { token };
     } catch (err) {
@@ -168,10 +169,12 @@ export class HelperService {
 
   async confirm(data: TConfirmRequest): Promise<Record<string, any>> {
     try {
-      this.logger.log(`Code verification`);
+      this.logger.log(`Verifying confirmation code...`);
       const verified = await this.userHelperService.confirmCodeVerification({
         code: data.code,
       });
+
+      this.logger.log(`Confirmation code verified`);
 
       return { verified };
     } catch (err) {

@@ -22,7 +22,7 @@ export class HelperService {
 
   async me(props: IProps): Promise<Record<string, any>> {
     try {
-      this.logger.log(`Getting me`);
+      this.logger.log(`Getting me...`);
       const user = await this.userHelperService.findOne(props, {
         id: props.auth.entityId,
       });
@@ -33,6 +33,8 @@ export class HelperService {
       );
 
       user['members'] = members;
+
+      this.logger.log(`User data retrieved`);
 
       return user;
     } catch (err) {

@@ -53,8 +53,8 @@ export class HelperService extends BaseHelperService {
         },
       });
 
-      this.logger.log(`New "${this.origin}" created (ID: ${record.id})`);
       this.eventService.create(this.origin, record);
+      this.logger.log(`New "${this.origin}" created (ID: ${record.id})`);
 
       return record;
     } catch (err) {
@@ -220,9 +220,9 @@ export class HelperService extends BaseHelperService {
         },
       });
 
-      this.logger.log(`One "${this.origin}" was updated (ID: ${record.id})`);
       this.eventService.update(this.origin, record);
       await this.cacheService.del(this.origin, record.id);
+      this.logger.log(`One "${this.origin}" was updated (ID: ${record.id})`);
 
       return record;
     } catch (err) {
@@ -237,9 +237,9 @@ export class HelperService extends BaseHelperService {
         where: { id: data.id },
       });
 
-      this.logger.log(`One "${this.origin}" was deleted (ID: ${record.id})`);
       this.eventService.remove(this.origin, record);
       await this.cacheService.del(this.origin, record.id);
+      this.logger.log(`One "${this.origin}" was deleted (ID: ${record.id})`);
     } catch (err) {
       throw err;
     }
