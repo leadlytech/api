@@ -29,12 +29,12 @@ export class ModuleService extends BaseModuleService {
 
   async create(txn: ITxn): Promise<TCreateResponse> {
     try {
-      const { props, params } = this.extract<
+      const { props, content } = this.extract<
         Record<'organizationId', string>,
         any,
         TCreateRequest
       >(txn);
-      const record = await this.helperService.create(props, params);
+      const record = await this.helperService.create(props, content);
 
       return {
         statusCode: HttpStatus.CREATED,
@@ -47,15 +47,12 @@ export class ModuleService extends BaseModuleService {
 
   async list(txn: ITxn): Promise<TListResponse> {
     try {
-      const { props, params, query } = this.extract<
+      const { props, content } = this.extract<
         Record<'organizationId', string>,
         TListRequest,
         any
       >(txn);
-      const payload = await this.helperService.list(props, {
-        ...params,
-        ...query,
-      });
+      const payload = await this.helperService.list(props, content);
 
       return {
         statusCode: HttpStatus.OK,
@@ -68,8 +65,8 @@ export class ModuleService extends BaseModuleService {
 
   async findOne(txn: ITxn): Promise<TFindResponse> {
     try {
-      const { props, params } = this.extract<TFindRequest, any, any>(txn);
-      const record = await this.helperService.findOne(props, params);
+      const { props, content } = this.extract<TFindRequest, any, any>(txn);
+      const record = await this.helperService.findOne(props, content);
 
       return {
         statusCode: HttpStatus.OK,
@@ -82,12 +79,12 @@ export class ModuleService extends BaseModuleService {
 
   async update(txn: ITxn): Promise<TUpdateResponse> {
     try {
-      const { props, params, body } = this.extract<
+      const { props, content } = this.extract<
         Record<'id', string>,
         any,
         TUpdateRequest
       >(txn);
-      await this.helperService.update(props, params.id, body);
+      await this.helperService.update(props, content.id, content);
 
       return {
         statusCode: HttpStatus.OK,
@@ -99,8 +96,8 @@ export class ModuleService extends BaseModuleService {
 
   async remove(txn: ITxn): Promise<TRemoveResponse> {
     try {
-      const { props, params } = this.extract<TRemoveRequest, any, any>(txn);
-      await this.helperService.remove(props, params);
+      const { props, content } = this.extract<TRemoveRequest, any, any>(txn);
+      await this.helperService.remove(props, content);
 
       return {
         statusCode: HttpStatus.NO_CONTENT,
