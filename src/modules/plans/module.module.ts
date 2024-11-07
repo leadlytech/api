@@ -11,4 +11,4 @@ import { SharedModule } from 'src/shared/shared.module';
   providers: services,
   exports: publicServices,
 })
-export class SolutionsModule {}
+export class PlansModule {}

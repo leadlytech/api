@@ -32,7 +32,7 @@ export class HelperService extends BaseHelperService {
   }
   private origin = origin;
   private logger = new Logger(this.origin);
-  private repository = this.prisma.solution;
+  private repository = this.prisma.plan;
 
   async create(
     props: IProps,
@@ -43,10 +43,12 @@ export class HelperService extends BaseHelperService {
       const record = await this.repository.create({
         data: {
           id: createRecordId(),
-          tenantId: props.tenantId,
-          type: data.type,
+          serviceId: data.serviceId,
+          status: data.status,
           name: data.name,
           description: data.description,
+          amount: data.amount,
+          recurrence: data.recurrence,
         },
         select: {
           id: true,
@@ -84,14 +86,18 @@ export class HelperService extends BaseHelperService {
         },
         sortFields: ['id'],
         mergeWhere: {
-          tenantId: props.tenantId,
+          service: {
+            id: data.serviceId,
+            tenantId: props.tenantId,
+          },
         },
         select: {
           id: true,
-          type: true,
+          status: true,
           name: true,
           description: true,
-          createdAt: true,
+          amount: true,
+          recurrence: true,
         },
       });
 
@@ -121,7 +127,10 @@ export class HelperService extends BaseHelperService {
         record = await this.repository.findUniqueOrThrow({
           where: {
             id: data.id,
-            tenantId: props.tenantId,
+            service: {
+              id: data.serviceId,
+              tenantId: props.tenantId,
+            },
           },
         });
 
@@ -148,7 +157,10 @@ export class HelperService extends BaseHelperService {
       const record = await this.repository.update({
         where: {
           id,
-          tenantId: props.tenantId,
+          service: {
+            id: data.serviceId,
+            tenantId: props.tenantId,
+          },
         },
         data,
       });
@@ -169,7 +181,10 @@ export class HelperService extends BaseHelperService {
       const record = await this.repository.delete({
         where: {
           id: data.id,
-          tenantId: props.tenantId,
+          service: {
+            id: data.serviceId,
+            tenantId: props.tenantId,
+          },
         },
       });
 

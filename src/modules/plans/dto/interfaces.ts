@@ -4,7 +4,7 @@ import { EOriginRoutes } from 'src/routes';
 
 import { CreateDto, ListDto, FindDto, UpdateDto, RemoveDto } from './classes';
 
-export const origin = EOriginRoutes.SOLUTIONS;
+export const origin = EOriginRoutes.PLANS;
 
 // Default
 export type IDefault = Permission;

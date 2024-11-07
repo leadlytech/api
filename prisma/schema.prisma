@@ -27,7 +27,7 @@ model Tenant {
   Organization   Organization[]
   Resource       Resource[]
   Permission     Permission[]
-  Solution       Solution[]
+  Service        Service[]
   Link           Link[]
 
   @@map("tenants")
@@ -59,7 +59,7 @@ enum ESolutionType {
   FUNNELS // Serviço de funis
 }
 
-model Solution {
+model Service {
   id          String        @unique
   tenantId    String
   tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -68,52 +68,57 @@ model Solution {
   description String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @default(now()) @updatedAt
-  Offer       Offer[]
+  plan        Plan[]
 
   @@id([tenantId, type])
   @@map("solutions")
 }
 
-enum EOfferRecurrence {
+enum EPlanStatus {
+  ACTIVE // Funcional e disponível à qualquer um
+  PRIVATE // Restrito à grupos específicos (Exige configuração manual)
+  DISABLED // Desativado (Não disponível à ninguém)
+}
+
+enum EPlanRecurrence {
   MONTHLY // A cada 1 mês
   QUARTERLY // A cada 3 meses
   SEMMONLY // A cada 6 meses
   YEARLY // A cada 12 meses
 }
 
-enum EOfferStatus {
-  ACTIVE // Funcional e disponível à qualquer um
-  PRIVATE // Restrito à grupos específicos (Exige configuração manual)
-  DISABLED // Desativado (Não disponível à ninguém)
-}
-
-model Offer {
-  id           String            @id
-  solutionId   String
-  solution     Solution          @relation(fields: [solutionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  status       EOfferStatus      @default(DISABLED)
+model Plan {
+  id           String           @id
+  serviceId    String
+  service      Service          @relation(fields: [serviceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  status       EPlanStatus      @default(DISABLED)
   name         String
   description  String?
   amount       Int?
-  recurrence   EOfferRecurrence?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @default(now()) @updatedAt
+  recurrence   EPlanRecurrence? @default(MONTHLY) // Recorrência de cobrança. Se for nulo nunca será novamente cobrado
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @default(now()) @updatedAt
   Benefit      Benefit[]
   Subscription Subscription[]
   Charge       Charge[]
 
-  @@map("offers")
+  @@map("plans")
+}
+
+enum EResourceType {
+  LIMIT // Recursos que podem ser contabilizados e expressados por meio de números inteiros
 }
 
 model Resource {
-  id          String    @unique
+  id          String        @unique
   tenantId    String
-  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  type        EResourceType
+  key         String // Chave local do recurso do sistema
   name        String
   description String?
-  key         String // Chave local do recurso do sistema
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now()) @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
   Benefit     Benefit[]
 
   @@id([tenantId, key])
@@ -121,13 +126,13 @@ model Resource {
 }
 
 model Benefit {
-  offerId    String
-  offer      Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  planId     String
+  plan       Plan     @relation(fields: [planId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   resourceId String
   resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  value      Int?
+  config     Json?
 
-  @@id([offerId, resourceId])
+  @@id([planId, resourceId])
   @@map("benefits")
 }
 
@@ -283,8 +288,8 @@ model Subscription {
   id             String       @id
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  offerId        String
-  offer          Offer        @relation(fields: [offerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  planId         String
+  plan           Plan         @relation(fields: [planId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   nextCharge     DateTime? // Data da próxima cobrança do valor da oferta
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @default(now()) @updatedAt
@@ -302,8 +307,8 @@ model Charge {
   id             String        @id
   organizationId String
   organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  offerId        String
-  offer          Offer         @relation(fields: [offerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  planId         String
+  plan           Plan          @relation(fields: [planId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   status         EChargeStatus @default(PENDING)
   amount         Int?
   createdAt      DateTime      @default(now())

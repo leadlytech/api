@@ -2,10 +2,13 @@
 CREATE TYPE "ESolutionType" AS ENUM ('LINKS', 'FUNNELS');
 
 -- CreateEnum
-CREATE TYPE "EOfferRecurrence" AS ENUM ('MONTHLY', 'QUARTERLY', 'SEMMONLY', 'YEARLY');
+CREATE TYPE "EPlanStatus" AS ENUM ('ACTIVE', 'PRIVATE', 'DISABLED');
 
 -- CreateEnum
-CREATE TYPE "EOfferStatus" AS ENUM ('ACTIVE', 'PRIVATE', 'DISABLED');
+CREATE TYPE "EPlanRecurrence" AS ENUM ('MONTHLY', 'QUARTERLY', 'SEMMONLY', 'YEARLY');
+
+-- CreateEnum
+CREATE TYPE "EResourceType" AS ENUM ('LIMIT');
 
 -- CreateEnum
 CREATE TYPE "EUserStatus" AS ENUM ('ACTIVE', 'BLOCKED', 'SUSPENDED');
@@ -79,27 +82,28 @@ CREATE TABLE "solutions" (
 );
 
 -- CreateTable
-CREATE TABLE "offers" (
+CREATE TABLE "plans" (
     "id" TEXT NOT NULL,
-    "solutionId" TEXT NOT NULL,
-    "status" "EOfferStatus" NOT NULL DEFAULT 'DISABLED',
+    "serviceId" TEXT NOT NULL,
+    "status" "EPlanStatus" NOT NULL DEFAULT 'DISABLED',
     "name" TEXT NOT NULL,
     "description" TEXT,
     "amount" INTEGER,
-    "recurrence" "EOfferRecurrence",
+    "recurrence" "EPlanRecurrence" DEFAULT 'MONTHLY',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "offers_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "plans_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "resources" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
+    "type" "EResourceType" NOT NULL,
+    "key" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
-    "key" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -108,11 +112,11 @@ CREATE TABLE "resources" (
 
 -- CreateTable
 CREATE TABLE "benefits" (
-    "offerId" TEXT NOT NULL,
+    "planId" TEXT NOT NULL,
     "resourceId" TEXT NOT NULL,
-    "value" INTEGER,
+    "config" JSONB,
 
-    CONSTRAINT "benefits_pkey" PRIMARY KEY ("offerId","resourceId")
+    CONSTRAINT "benefits_pkey" PRIMARY KEY ("planId","resourceId")
 );
 
 -- CreateTable
@@ -215,7 +219,7 @@ CREATE TABLE "memberRole" (
 CREATE TABLE "subscriptions" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
-    "offerId" TEXT NOT NULL,
+    "planId" TEXT NOT NULL,
     "nextCharge" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -227,7 +231,7 @@ CREATE TABLE "subscriptions" (
 CREATE TABLE "charges" (
     "id" TEXT NOT NULL,
     "organizationId" TEXT NOT NULL,
-    "offerId" TEXT NOT NULL,
+    "planId" TEXT NOT NULL,
     "status" "EChargeStatus" NOT NULL DEFAULT 'PENDING',
     "amount" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -409,13 +413,13 @@ ALTER TABLE "permissions" ADD CONSTRAINT "permissions_tenantId_fkey" FOREIGN KEY
 ALTER TABLE "solutions" ADD CONSTRAINT "solutions_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "offers" ADD CONSTRAINT "offers_solutionId_fkey" FOREIGN KEY ("solutionId") REFERENCES "solutions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "plans" ADD CONSTRAINT "plans_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "solutions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "resources" ADD CONSTRAINT "resources_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "benefits" ADD CONSTRAINT "benefits_offerId_fkey" FOREIGN KEY ("offerId") REFERENCES "offers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "benefits" ADD CONSTRAINT "benefits_planId_fkey" FOREIGN KEY ("planId") REFERENCES "plans"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "benefits" ADD CONSTRAINT "benefits_resourceId_fkey" FOREIGN KEY ("resourceId") REFERENCES "resources"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -460,13 +464,13 @@ ALTER TABLE "memberRole" ADD CONSTRAINT "memberRole_roleId_fkey" FOREIGN KEY ("r
 ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_offerId_fkey" FOREIGN KEY ("offerId") REFERENCES "offers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "subscriptions" ADD CONSTRAINT "subscriptions_planId_fkey" FOREIGN KEY ("planId") REFERENCES "plans"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "charges" ADD CONSTRAINT "charges_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "charges" ADD CONSTRAINT "charges_offerId_fkey" FOREIGN KEY ("offerId") REFERENCES "offers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "charges" ADD CONSTRAINT "charges_planId_fkey" FOREIGN KEY ("planId") REFERENCES "plans"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "roles" ADD CONSTRAINT "roles_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
