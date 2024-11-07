@@ -76,9 +76,8 @@ export class HelperService extends BaseHelperService {
         },
       });
 
-      await this.cacheService.del(this.origin, `relations:${verifyUser.id}`);
-
       this.eventService.create(this.origin, record);
+      await this.cacheService.del(this.origin, `relations:${verifyUser.id}`);
       this.logger.log(`New "${this.origin}" created (ID: ${record.id})`);
 
       return record;

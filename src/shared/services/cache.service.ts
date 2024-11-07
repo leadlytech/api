@@ -35,10 +35,10 @@ export class CacheService {
     }
   }
 
-  async getByPattern(
+  async getByPattern<T = any>(
     origin: string,
     pattern: string,
-  ): Promise<any[] | undefined> {
+  ): Promise<T[] | undefined> {
     try {
       let cursor = '0';
       let keys: string[] = [];
@@ -56,7 +56,7 @@ export class CacheService {
 
       // Se não encontrar chaves, retorna array vazio
       if (keys.length === 0) {
-        return [];
+        return undefined;
       }
 
       // Use MGET para obter todos os valores das chaves encontradas
@@ -176,7 +176,7 @@ export class CacheService {
     }
   }
 
-  private formatKey(origin: string, key?: string) {
+  private formatKey(origin: string, key?: string): string {
     if (key) return `${process.env.SERVER_NAME}:cache:${origin}:${key}`;
     return `${process.env.SERVER_NAME}:cache:${origin}`;
   }

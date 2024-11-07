@@ -28,7 +28,7 @@ export class HelperService {
 
       const members = await this.memberService.findUserMemberships(
         props,
-        props.auth.entityId,
+        user.id,
       );
 
       user['members'] = members;

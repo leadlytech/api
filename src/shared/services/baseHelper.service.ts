@@ -1,11 +1,25 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 
-import { SearchService } from './search.service';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { EventService, CacheService, SearchService } from '../services';
+
 import { EFieldType, EPaginationMode } from 'src/interfaces';
+
+// interface IElementCache {
+//   origin?: string;
+//   id?: string;
+//   organizationId?: string;
+// }
 
 @Injectable()
 export class BaseHelperService {
   constructor(private readonly searchService: SearchService) {}
+  // constructor(
+  //   protected readonly prisma: PrismaService,
+  //   protected readonly searchService: SearchService,
+  //   protected readonly eventService: EventService,
+  //   protected readonly cacheService: CacheService,
+  // ) {}
 
   async listing<
     Repository extends {
@@ -121,4 +135,21 @@ export class BaseHelperService {
       data: content,
     };
   }
+
+  // async clearContextCache(elements: Array<IElementCache>) {
+  //   try {
+  //     elements.forEach(async (element) => {
+  //       const origin = element.origin || '*';
+  //       const id = element.id || '*';
+  //       const organizationId = element.organizationId || '*';
+
+  //       await this.cacheService.delByPattern(
+  //         origin,
+  //         `org:${organizationId}:*:${id}`,
+  //       );
+  //     });
+  //   } catch (err) {
+  //     throw err;
+  //   }
+  // }
 }

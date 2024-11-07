@@ -126,9 +126,8 @@ export class HelperService extends BaseHelperService {
       });
 
       await this.clearCacheForUsers([data.userId]);
-
-      this.logger.log(`New "${this.origin}" created (ID: ${record.id})`);
       this.eventService.create(this.origin, record);
+      this.logger.log(`New "${this.origin}" created (ID: ${record.id})`);
 
       return record;
     } catch (err) {
@@ -223,11 +222,23 @@ export class HelperService extends BaseHelperService {
           tenantId: props.tenantId,
         },
         data,
+        include: {
+          Member: {
+            select: {
+              userId: true,
+            },
+          },
+        },
       });
 
-      this.logger.log(`One "${this.origin}" was updated (ID: ${record.id})`);
+      await this.clearCacheForUsers(
+        record.Member.map((member) => member.userId),
+      );
+      delete record['Member'];
+
       this.eventService.update(this.origin, record);
       await this.cacheService.del(this.origin, record.id);
+      this.logger.log(`One "${this.origin}" was updated (ID: ${record.id})`);
 
       return record;
     } catch (err) {
@@ -257,15 +268,15 @@ export class HelperService extends BaseHelperService {
         record.Member.map((member) => member.userId),
       );
 
-      this.logger.log(`One "${this.origin}" was deleted (ID: ${record.id})`);
       this.eventService.remove(this.origin, record);
       await this.cacheService.del(this.origin, record.id);
+      this.logger.log(`One "${this.origin}" was deleted (ID: ${record.id})`);
     } catch (err) {
       throw err;
     }
   }
 
-  async clearCacheForUsers(userIds: string[]): Promise<void> {
+  private async clearCacheForUsers(userIds: string[]): Promise<void> {
     try {
       userIds.map(async (userId) => {
         /**

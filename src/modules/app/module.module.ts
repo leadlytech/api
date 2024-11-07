@@ -17,15 +17,15 @@ import { envSchema } from 'src/utils';
 // Modules
 import { SharedModule } from 'src/shared/shared.module';
 import { TenantsModule } from 'src/modules/tenants/module.module';
+import { PermissionsModule } from 'src/modules/permissions/module.module';
 import { UsersModule } from 'src/modules/users/module.module';
 import { AuthModule } from 'src/modules/auth/module.module';
 import { AccountModule } from 'src/modules/account/module.module';
+import { CommunicationModule } from 'src/modules/communication/module.module';
 import { OrganizationsModule } from 'src/modules/organizations/module.module';
 import { MembersModule } from 'src/modules/members/module.module';
 import { RolesModule } from 'src/modules/roles/module.module';
 import { KeysModule } from 'src/modules/keys/module.module';
-import { PermissionsModule } from 'src/modules/permissions/module.module';
-import { CommunicationModule } from 'src/modules/communication/module.module';
 
 @Module({
   imports: [
@@ -62,11 +62,11 @@ import { CommunicationModule } from 'src/modules/communication/module.module';
     UsersModule,
     AuthModule,
     AccountModule,
-    OrganizationsModule,
-    KeysModule,
     CommunicationModule,
-    RolesModule,
+    OrganizationsModule,
     MembersModule,
+    RolesModule,
+    KeysModule,
   ],
   controllers,
   providers: services,
