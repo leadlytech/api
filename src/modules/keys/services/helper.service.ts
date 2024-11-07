@@ -112,15 +112,13 @@ export class HelperService extends BaseHelperService {
             updatedAt: true,
           },
         },
-        (content) => {
-          for (const contentI in content) {
-            content[contentI] = {
-              ...content[contentI],
-              value: `${content[contentI].value.slice(0, 5)}${'*'.repeat(content[contentI].value.length - 5)}`,
-              disabled: content[contentI].disabled ?? false,
-            };
+        (elements) => {
+          for (const element of elements) {
+            element['value'] =
+              `${element['value'].slice(0, 5)}${'*'.repeat(element['value'].length - 5)}`;
+            element['disabled'] = element['disabled'] ?? false;
           }
-          return content;
+          return elements;
         },
       );
 

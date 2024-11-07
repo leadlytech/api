@@ -21,6 +21,7 @@ export class FindDto extends createZodDto(findSchema) {
 }
 export class UpdateDto extends createZodDto(updateSchema) {
   organizationId: string;
+  status?: EMemberStatus;
 }
 export class RemoveDto extends createZodDto(removeSchema) {
   organizationId: string;

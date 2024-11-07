@@ -94,7 +94,7 @@ export class HelperService extends BaseHelperService {
         );
       }
 
-      // Verifica o email e telefone
+      // Cria o usuário
       const record = await this.repository.create({
         data: {
           id: createRecordId(),
@@ -107,6 +107,21 @@ export class HelperService extends BaseHelperService {
         },
         select: {
           id: true,
+        },
+      });
+
+      /**
+       * É possível que o usuário criado tenha sido convidado em uma organização antes de criar a conta.
+       * Por isso é verificado se existe algum convite pendente na tabela "members" para o respectivo usuário,
+       * e então tais registros já são atualizados para serem vinculados ao novo usuário por seu ID
+       */
+      await this.prisma.member.updateMany({
+        where: {
+          inviteEmail: data.email,
+        },
+        data: {
+          userId: record.id,
+          inviteEmail: null,
         },
       });
 

@@ -20,9 +20,15 @@ export class BaseModuleService {
     params: TParams;
     query: TQuery;
     body: TBody;
+    content: TQuery & TBody & TParams;
     res: Response;
   } {
     const { req, res } = txn;
+    const content: TQuery & TBody & TParams = {
+      ...req.query,
+      ...req.body,
+      ...req.params,
+    };
 
     return {
       req,
@@ -31,6 +37,7 @@ export class BaseModuleService {
       params: req.params as any,
       query: req.query as any,
       body: req.body,
+      content,
       res,
     };
   }

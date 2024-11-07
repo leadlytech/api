@@ -185,6 +185,14 @@ export class AuthGuard implements CanActivate {
             tenantId: props.tenantId,
           },
         });
+
+        if (verifyPermission) {
+          await this.cacheService.set(
+            this.origin,
+            `cachedPermission:${permissionConfig.key}`,
+            verifyPermission,
+          );
+        }
       }
 
       /**

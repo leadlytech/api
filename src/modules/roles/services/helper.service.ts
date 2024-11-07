@@ -85,43 +85,29 @@ export class HelperService extends BaseHelperService {
       type S = Parameters<R['findMany']>[0]['select'];
       type O = Parameters<R['findMany']>[0]['orderBy'];
 
-      const listed = await this.listing<R, F, W, S, O>(
-        this.repository,
-        data,
-        {
-          logger: this.logger,
-          origin: this.origin,
-          restrictPaginationToMode,
-          searchableFields: {
-            id: EFieldType.STRING,
-          },
-          sortFields: ['id'],
-          mergeWhere: {
-            organizationId: data.organizationId,
-            organization: {
-              id: data.organizationId,
-              tenantId: props.tenantId,
-            },
-          },
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            createdAt: true,
-            updatedAt: true,
+      const listed = await this.listing<R, F, W, S, O>(this.repository, data, {
+        logger: this.logger,
+        origin: this.origin,
+        restrictPaginationToMode,
+        searchableFields: {
+          id: EFieldType.STRING,
+        },
+        sortFields: ['id'],
+        mergeWhere: {
+          organizationId: data.organizationId,
+          organization: {
+            id: data.organizationId,
+            tenantId: props.tenantId,
           },
         },
-        (content) => {
-          for (const contentI in content) {
-            content[contentI] = {
-              ...content[contentI],
-              value: `${content[contentI].value.slice(0, 5)}${'*'.repeat(content[contentI].value.length - 5)}`,
-              disabled: content[contentI].disabled ?? false,
-            };
-          }
-          return content;
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true,
         },
-      );
+      });
 
       return listed;
     } catch (err) {

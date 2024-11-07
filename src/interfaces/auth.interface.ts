@@ -33,6 +33,7 @@ export enum EAction {
   MANAGE = 'manage',
   CREATE = 'create',
   READ = 'read',
+  LIST = 'list',
   UPDATE = 'update',
   DELETE = 'delete',
 }

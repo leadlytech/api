@@ -40,8 +40,9 @@ export class HelperService extends BaseHelperService {
   ): Promise<Partial<IDefault>> {
     try {
       this.logger.log(`Creating a new "${this.origin}"`);
-      const verifyUser = await this.prisma.user.findFirstOrThrow({
+      const verifyUser = await this.prisma.user.findFirst({
         where: {
+          tenantId: props.tenantId,
           email: data.email,
         },
         select: {
@@ -49,17 +50,36 @@ export class HelperService extends BaseHelperService {
         },
       });
 
+      if (verifyUser) {
+        // Verifica se o usuário já faz parte da organização
+        const verifyMember = await this.repository.findFirst({
+          where: {
+            userId: verifyUser?.id,
+          },
+        });
+
+        if (verifyMember) {
+          throw new HttpException(
+            {
+              statusCode: HttpStatus.BAD_REQUEST,
+              message: 'ERR_USER_IS_ALREADY_A_MEMBER',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+
       const record = await this.repository.create({
         data: {
           id: createRecordId(),
-          inviteEmail: data.email,
+          inviteEmail: verifyUser?.id ? undefined : data.email,
           owner: data.owner,
           status: data.status,
           ...(verifyUser?.id
             ? {
                 user: {
                   connect: {
-                    id: verifyUser.id,
+                    id: verifyUser?.id,
                   },
                 },
               }
@@ -76,8 +96,11 @@ export class HelperService extends BaseHelperService {
         },
       });
 
+      if (verifyUser) {
+        await this.cacheService.del(this.origin, `relations:${verifyUser.id}`);
+      }
+
       this.eventService.create(this.origin, record);
-      await this.cacheService.del(this.origin, `relations:${verifyUser.id}`);
       this.logger.log(`New "${this.origin}" created (ID: ${record.id})`);
 
       return record;
@@ -99,37 +122,48 @@ export class HelperService extends BaseHelperService {
       type S = Parameters<R['findMany']>[0]['select'];
       type O = Parameters<R['findMany']>[0]['orderBy'];
 
-      const listed = await this.listing<R, F, W, S, O>(this.repository, data, {
-        logger: this.logger,
-        origin: this.origin,
-        restrictPaginationToMode,
-        searchableFields: {
-          id: EFieldType.STRING,
-          userId: EFieldType.STRING,
-        },
-        sortFields: ['id'],
-        mergeWhere: {
-          organizationId: data.organizationId,
-          organization: {
-            id: data.organizationId,
-            tenantId: props.tenantId,
+      const listed = await this.listing<R, F, W, S, O>(
+        this.repository,
+        data,
+        {
+          logger: this.logger,
+          origin: this.origin,
+          restrictPaginationToMode,
+          searchableFields: {
+            id: EFieldType.STRING,
+            userId: EFieldType.STRING,
           },
-        },
-        select: {
-          id: true,
-          status: true,
-          owner: true,
-          createdAt: true,
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
+          sortFields: ['id'],
+          mergeWhere: {
+            organizationId: data.organizationId,
+            organization: {
+              id: data.organizationId,
+              tenantId: props.tenantId,
+            },
+          },
+          select: {
+            id: true,
+            status: true,
+            owner: true,
+            inviteEmail: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
             },
           },
         },
-      });
+        (elements) => {
+          for (const element of elements) {
+            element['owner'] = element['owner'] ?? false;
+          }
+          return elements;
+        },
+      );
 
       return listed;
     } catch (err) {
@@ -157,7 +191,12 @@ export class HelperService extends BaseHelperService {
 
         record = await Promise.all(
           members.map((member) => this.findOne(props, member, true)),
-        ).then((values) => values);
+        ).then((values) => {
+          return values.map((value) => {
+            delete value['user'];
+            return value;
+          });
+        });
 
         await this.cacheService.set(this.origin, `relations:${userId}`, record);
       }
@@ -203,6 +242,17 @@ export class HelperService extends BaseHelperService {
                   name: true,
                 },
               },
+              user: {
+                select: {
+                  id: true,
+                  status: true,
+                  lockReason: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  emailVerifiedAt: true,
+                },
+              },
             },
           });
 
@@ -237,6 +287,8 @@ export class HelperService extends BaseHelperService {
             delete memberRole['role']['RolePermission'];
             return memberRole.role;
           });
+
+          record['owner'] = record['owner'] ?? false;
           delete record['MemberRole'];
 
           return record;

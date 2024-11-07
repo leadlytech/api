@@ -42,7 +42,7 @@ export class ModuleController extends BaseModuleController {
   }
 
   @Get()
-  @Permission(`${origin}:${EAction.READ}`)
+  @Permission(`${origin}:${EAction.LIST}`)
   async list(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.list(
       this.validate(req, res, listSchema),
@@ -51,7 +51,7 @@ export class ModuleController extends BaseModuleController {
   }
 
   @Get(':organizationId')
-  @Permission(`${origin}:${EAction.READ}`)
+  @Permission(`${origin}:${EAction.READ}`, false)
   async findOne(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.findOne(
       this.validate(req, res, findSchema),

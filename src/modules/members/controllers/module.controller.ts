@@ -33,7 +33,7 @@ export class ModuleController extends BaseModuleController {
   }
 
   @Get()
-  @Permission(`${origin}:${EAction.READ}`, false)
+  @Permission(`${origin}:${EAction.LIST}`, false)
   async list(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.list(
       this.validate(req, res, listSchema),

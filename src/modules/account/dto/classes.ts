@@ -1,4 +1,4 @@
 import { createZodDto } from '@anatine/zod-nestjs';
-import { newOrgSchema } from './schemas';
+import { membershipSchema } from './schemas';
 
-export class NewOrgDto extends createZodDto(newOrgSchema) {}
+export class MembershipDto extends createZodDto(membershipSchema) {}

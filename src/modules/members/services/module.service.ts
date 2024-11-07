@@ -29,12 +29,12 @@ export class ModuleService extends BaseModuleService {
 
   async create(txn: ITxn): Promise<TCreateResponse> {
     try {
-      const { props, params } = this.extract<
+      const { props, content } = this.extract<
         Record<'organizationId', string>,
         any,
         TCreateRequest
       >(txn);
-      const record = await this.helperService.create(props, params);
+      const record = await this.helperService.create(props, content);
 
       return {
         statusCode: HttpStatus.CREATED,
