@@ -42,10 +42,16 @@ import { KeysModule } from 'src/modules/keys/module.module';
     RedisModule.forRoot(
       {
         config: {
-          host: process.env.REDIS_HOST,
-          port: Number(process.env.REDIS_PORT),
-          username: process.env.REDIS_USER,
-          password: process.env.REDIS_PASS,
+          ...(process.env.REDIS_URL
+            ? {
+                url: process.env.REDIS_URL,
+              }
+            : {
+                host: process.env.REDIS_HOST,
+                port: Number(process.env.REDIS_PORT),
+                username: process.env.REDIS_USER,
+                password: process.env.REDIS_PASS,
+              }),
         },
       },
       true,

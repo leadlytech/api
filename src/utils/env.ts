@@ -27,6 +27,7 @@ export const envSchema = z.object({
   DATABASE: z.string(),
   DATABASE_URL: z.string().url().optional(),
 
+  REDIS_URL: z.string().optional(),
   REDIS_HOST: z.string().optional(),
   REDIS_PORT: z.coerce.number().optional(),
   REDIS_USER: z.string().optional(),
