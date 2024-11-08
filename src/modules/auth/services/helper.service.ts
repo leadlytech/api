@@ -51,12 +51,12 @@ export class HelperService {
       );
 
       // Envia verificação de email
-      await this.userHelperService.sendVerification(
-        { tenantId: tenant.id },
-        payload.id,
-        EVerificationContext.CONFIRM,
-        EVerificationMethod.EMAIL,
-      );
+      // await this.userHelperService.sendVerification(
+      //   { tenantId: tenant.id },
+      //   payload.id,
+      //   EVerificationContext.CONFIRM,
+      //   EVerificationMethod.EMAIL,
+      // );
 
       // Envia verificação de sms
       // await this.userHelperService.sendVerification(

@@ -18,7 +18,7 @@ export class ModuleController extends BaseModuleController {
     super();
   }
 
-  @Post('signup')
+  @Post('register')
   async signUp(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
     const response: IResponse = await this.moduleService.signUp(
       this.validate(req, res, signUpSchema),
