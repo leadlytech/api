@@ -30,6 +30,7 @@
     "@nestjs/platform-express": "^10.0.0",
     "@prisma/client": "^5.22.0",
     "@songkeys/nestjs-redis": "^10.0.0",
+    "api": "file:",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
     "helmet": "^8.0.0",
