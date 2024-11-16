@@ -3,6 +3,7 @@ export enum EOriginRoutes {
   ACCOUNT = 'account',
   AUTH = 'auth',
   KEYS = 'keys',
+  FUNNEL = 'funnels',
   MEMBERS = 'members',
   ORGANIZATIONS = 'organizations',
   PERMISSIONS = 'permissions',

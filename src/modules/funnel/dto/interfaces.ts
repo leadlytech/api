@@ -1,13 +1,13 @@
-import { Member } from '@prisma/client';
+import { Funnel } from '@prisma/client';
 import { IResponse, TList } from 'src/interfaces';
 import { EOriginRoutes } from 'src/routes';
 
 import { CreateDto, ListDto, FindDto, UpdateDto, RemoveDto } from './classes';
 
-export const origin = EOriginRoutes.MEMBERS;
+export const origin = EOriginRoutes.FUNNEL;
 
 // Default
-export type IDefault = Member;
+export type IDefault = Funnel;
 
 // Create
 export type TCreateRequest = CreateDto;

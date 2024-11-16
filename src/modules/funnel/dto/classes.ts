@@ -6,23 +6,26 @@ import {
   updateSchema,
   removeSchema,
 } from './schemas';
-import { EMemberStatus } from '@prisma/client';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { Funnel } from '@prisma/client';
 
 export class CreateDto extends createZodDto(createSchema) {
+  id: string;
   organizationId: string;
-  owner?: boolean;
-  status?: EMemberStatus;
 }
 export class ListDto extends createZodDto(listSchema) {
+  id: string;
   organizationId: string;
 }
 export class FindDto extends createZodDto(findSchema) {
+  id: string;
   organizationId: string;
 }
 export class UpdateDto extends createZodDto(updateSchema) {
+  id: string;
   organizationId: string;
-  status?: EMemberStatus;
 }
 export class RemoveDto extends createZodDto(removeSchema) {
+  id: string;
   organizationId: string;
 }
