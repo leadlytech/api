@@ -28,6 +28,7 @@ import { OrganizationsModule } from 'src/modules/organizations/module.module';
 import { MembersModule } from 'src/modules/members/module.module';
 import { RolesModule } from 'src/modules/roles/module.module';
 import { KeysModule } from 'src/modules/keys/module.module';
+import { FunnelsModule } from 'src/modules/funnels/module.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { KeysModule } from 'src/modules/keys/module.module';
     MembersModule,
     RolesModule,
     KeysModule,
+    FunnelsModule,
   ],
   controllers,
   providers: services,

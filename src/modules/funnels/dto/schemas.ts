@@ -5,7 +5,8 @@ import { baseListSchema } from 'src/modules/app/dto';
 
 export const createSchema = extendApi(
   z.object({
-    email: z.string().email().optional(),
+    name: z.string().trim(),
+    description: z.string().trim().optional(),
   }),
 );
 
@@ -19,7 +20,12 @@ export const findSchema = extendApi(
   }),
 );
 
-export const updateSchema = extendApi(z.object({}));
+export const updateSchema = extendApi(
+  z.object({
+    name: z.string().trim().optional(),
+    description: z.string().trim().optional(),
+  }),
+);
 
 export const removeSchema = extendApi(
   z.object({

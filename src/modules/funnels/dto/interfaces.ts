@@ -4,7 +4,7 @@ import { EOriginRoutes } from 'src/routes';
 
 import { CreateDto, ListDto, FindDto, UpdateDto, RemoveDto } from './classes';
 
-export const origin = EOriginRoutes.FUNNEL;
+export const origin = EOriginRoutes.FUNNELS;
 
 // Default
 export type IDefault = Funnel;
