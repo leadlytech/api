@@ -25,6 +25,7 @@ import { AuthModule } from 'src/modules/auth/module.module';
 import { AccountModule } from 'src/modules/account/module.module';
 import { CommunicationModule } from 'src/modules/communication/module.module';
 import { OrganizationsModule } from 'src/modules/organizations/module.module';
+import { StatisticsModule } from 'src/modules/statistics/module.module';
 import { MembersModule } from 'src/modules/members/module.module';
 import { RolesModule } from 'src/modules/roles/module.module';
 import { KeysModule } from 'src/modules/keys/module.module';
@@ -75,6 +76,7 @@ import { FunnelsModule } from 'src/modules/funnels/module.module';
     AccountModule,
     CommunicationModule,
     OrganizationsModule,
+    StatisticsModule,
     MembersModule,
     RolesModule,
     KeysModule,

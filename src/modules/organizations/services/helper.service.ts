@@ -194,6 +194,12 @@ export class HelperService extends BaseHelperService {
             id: data.organizationId,
             tenantId: props.tenantId,
           },
+          select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            updatedAt: true,
+          },
         });
 
         if (!renew) {

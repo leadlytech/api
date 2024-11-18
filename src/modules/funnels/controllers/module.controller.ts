@@ -14,9 +14,7 @@ import { EAction, IResponse } from 'src/interfaces';
 import { Auth, Permission } from 'src/decorators';
 import { BaseModuleController } from 'src/shared/services';
 
-@Auth({
-  blockAPIKey: true,
-})
+@Auth()
 @Controller({ path: `organizations/:organizationId/${origin}` })
 export class ModuleController extends BaseModuleController {
   constructor(private readonly moduleService: ModuleService) {

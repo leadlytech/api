@@ -221,6 +221,7 @@ model Organization {
   Role         Role[]
   Funnel       Funnel[]
   Link         Link[]
+  Lead         Lead[]
 
   @@map("organizations")
 }
@@ -344,6 +345,24 @@ model RolePermission {
   @@map("rolePermission")
 }
 
+// # LEADS
+
+// Modelo que armazena os "leads", pessoas que entraram no funil
+model Lead {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  name           String?
+  email          String?
+  phoneNumber    String?
+  birthDate      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  Journey        Journey[]
+
+  @@map("leads")
+}
+
 // # SERVIÇO DE LINKS
 
 // Modelo que armazena os links para um determinado funil
@@ -402,10 +421,10 @@ model Funnel {
   description    String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @default(now()) @updatedAt
-  Lead           Lead[]
   Variable       Variable[]
   Step           Step[]
   Tracker        Tracker[]
+  Journey        Journey[]
 
   @@map("funnels")
 }
@@ -416,6 +435,7 @@ enum ETrackerOrigin {
   GTM
 }
 
+// Modelo que relaciona um link personalizado ao funil
 model Tracker {
   funnelId  String
   funnel    Funnel         @relation(fields: [funnelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -430,20 +450,19 @@ model Tracker {
   @@map("trackers")
 }
 
-// Modelo que armazena os "leads", pessoas que entraram no funil
-model Lead {
+// Modelo que relaciona os leads aos funis que participaram
+model Journey {
   id          String        @id
+  leadId      String
+  lead        Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   funnelId    String
   funnel      Funnel        @relation(fields: [funnelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  name        String?
-  email       String?
-  phoneNumber String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @default(now()) @updatedAt
   Value       Value[]
   Interaction Interaction[]
 
-  @@map("leads")
+  @@map("journeys")
 }
 
 enum EVariableType {
@@ -472,8 +491,8 @@ model Variable {
 // Modelo que armazena os valores das variáveis assim como à qual lead elas pertencem
 model Value {
   id         String   @id
-  leadId     String
-  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  journeyId  String
+  journey    Journey  @relation(fields: [journeyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   variableId String
   variable   Variable @relation(fields: [variableId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   value      String   @db.Text
@@ -526,8 +545,8 @@ model Edge {
 // Modelo que armazena as interações de um lead em uma determinada etapa
 model Interaction {
   id        String   @id
-  leadId    String
-  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  journeyId String
+  journey   Journey  @relation(fields: [journeyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   stepId    String
   step      Step     @relation(fields: [stepId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   createdAt DateTime @default(now())

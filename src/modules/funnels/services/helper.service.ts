@@ -91,6 +91,7 @@ export class HelperService extends BaseHelperService {
           id: true,
           name: true,
           createdAt: true,
+          updatedAt: true,
         },
       });
 
@@ -123,6 +124,13 @@ export class HelperService extends BaseHelperService {
             organization: {
               tenantId: props.tenantId,
             },
+          },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            createdAt: true,
+            updatedAt: true,
           },
         });
 

@@ -43,7 +43,7 @@ export class HelperService extends BaseHelperService {
     const phoneNumber = parsePhoneNumber(phone);
 
     // Verifica o formato do telefone
-    if (!phoneNumber.isValid()) {
+    if (!phoneNumber || !phoneNumber.isPossible() || !phoneNumber.isValid()) {
       throw new HttpException(
         {
           message: 'ERR_INVALID_PHONE_NUMBER',

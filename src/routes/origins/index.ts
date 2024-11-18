@@ -10,6 +10,7 @@ export enum EOriginRoutes {
   PLANS = 'plans',
   ROLES = 'roles',
   SERVICES = 'services',
+  STATISTICS = 'statistics',
   TENANTS = 'tenants',
   USERS = 'users',
 }

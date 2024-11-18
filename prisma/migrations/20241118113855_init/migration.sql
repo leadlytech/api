@@ -262,6 +262,20 @@ CREATE TABLE "rolePermission" (
 );
 
 -- CreateTable
+CREATE TABLE "leads" (
+    "id" TEXT NOT NULL,
+    "organizationId" TEXT NOT NULL,
+    "name" TEXT,
+    "email" TEXT,
+    "phoneNumber" TEXT,
+    "birthDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "leads_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "links" (
     "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -315,16 +329,14 @@ CREATE TABLE "trackers" (
 );
 
 -- CreateTable
-CREATE TABLE "leads" (
+CREATE TABLE "journeys" (
     "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
     "funnelId" TEXT NOT NULL,
-    "name" TEXT,
-    "email" TEXT,
-    "phoneNumber" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "leads_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "journeys_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -343,7 +355,7 @@ CREATE TABLE "variables" (
 -- CreateTable
 CREATE TABLE "values" (
     "id" TEXT NOT NULL,
-    "leadId" TEXT NOT NULL,
+    "journeyId" TEXT NOT NULL,
     "variableId" TEXT NOT NULL,
     "value" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -380,7 +392,7 @@ CREATE TABLE "edges" (
 -- CreateTable
 CREATE TABLE "interactions" (
     "id" TEXT NOT NULL,
-    "leadId" TEXT NOT NULL,
+    "journeyId" TEXT NOT NULL,
     "stepId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -482,6 +494,9 @@ ALTER TABLE "rolePermission" ADD CONSTRAINT "rolePermission_roleId_fkey" FOREIGN
 ALTER TABLE "rolePermission" ADD CONSTRAINT "rolePermission_permissionId_fkey" FOREIGN KEY ("permissionId") REFERENCES "permissions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "leads" ADD CONSTRAINT "leads_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "links" ADD CONSTRAINT "links_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -500,13 +515,16 @@ ALTER TABLE "trackers" ADD CONSTRAINT "trackers_funnelId_fkey" FOREIGN KEY ("fun
 ALTER TABLE "trackers" ADD CONSTRAINT "trackers_linkId_fkey" FOREIGN KEY ("linkId") REFERENCES "links"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "leads" ADD CONSTRAINT "leads_funnelId_fkey" FOREIGN KEY ("funnelId") REFERENCES "funnels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "journeys" ADD CONSTRAINT "journeys_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "leads"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "journeys" ADD CONSTRAINT "journeys_funnelId_fkey" FOREIGN KEY ("funnelId") REFERENCES "funnels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "variables" ADD CONSTRAINT "variables_funnelId_fkey" FOREIGN KEY ("funnelId") REFERENCES "funnels"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "values" ADD CONSTRAINT "values_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "leads"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "values" ADD CONSTRAINT "values_journeyId_fkey" FOREIGN KEY ("journeyId") REFERENCES "journeys"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "values" ADD CONSTRAINT "values_variableId_fkey" FOREIGN KEY ("variableId") REFERENCES "variables"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -521,7 +539,7 @@ ALTER TABLE "edges" ADD CONSTRAINT "edges_originId_fkey" FOREIGN KEY ("originId"
 ALTER TABLE "edges" ADD CONSTRAINT "edges_destinyId_fkey" FOREIGN KEY ("destinyId") REFERENCES "steps"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "interactions" ADD CONSTRAINT "interactions_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "leads"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "interactions" ADD CONSTRAINT "interactions_journeyId_fkey" FOREIGN KEY ("journeyId") REFERENCES "journeys"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "interactions" ADD CONSTRAINT "interactions_stepId_fkey" FOREIGN KEY ("stepId") REFERENCES "steps"("id") ON DELETE CASCADE ON UPDATE CASCADE;
