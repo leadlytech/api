@@ -30,6 +30,7 @@ import { MembersModule } from 'src/modules/members/module.module';
 import { RolesModule } from 'src/modules/roles/module.module';
 import { KeysModule } from 'src/modules/keys/module.module';
 import { FunnelsModule } from 'src/modules/funnels/module.module';
+import { PublicModule } from 'src/modules/public/module.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { FunnelsModule } from 'src/modules/funnels/module.module';
     RolesModule,
     KeysModule,
     FunnelsModule,
+    PublicModule,
   ],
   controllers,
   providers: services,
