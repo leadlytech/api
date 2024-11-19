@@ -131,6 +131,22 @@ export class HelperService extends BaseHelperService {
             description: true,
             createdAt: true,
             updatedAt: true,
+            Step: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                config: true,
+                data: true,
+              },
+            },
+            Edge: {
+              select: {
+                id: true,
+                originId: true,
+                destinyId: true,
+              },
+            },
           },
         });
 
@@ -161,8 +177,15 @@ export class HelperService extends BaseHelperService {
             tenantId: props.tenantId,
           },
         },
-        data,
+        data: {
+          name: data.name,
+          description: data.description,
+        },
       });
+
+      if (data.steps || data.edges) {
+        await this.saveFunnelDetails(record.id, data.steps, data.edges);
+      }
 
       this.eventService.update(this.origin, record);
       await this.cacheService.del(this.origin, record.id);
@@ -189,6 +212,55 @@ export class HelperService extends BaseHelperService {
       this.eventService.remove(this.origin, record);
       await this.cacheService.del(this.origin, record.id);
       this.logger.log(`One "${this.origin}" was deleted (ID: ${record.id})`);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  async saveFunnelDetails(funnelId: string, steps: any[], edges: any[]) {
+    try {
+      await this.prisma.$transaction(async (txn) => {
+        // 1. Apaga todos os steps e edges não listados
+        await txn.step.deleteMany({
+          where: {
+            funnelId,
+          },
+        });
+
+        await txn.edge.deleteMany({
+          where: {
+            funnelId,
+          },
+        });
+
+        // 2. Cria os steps e edges ausentes
+
+        await txn.step.createMany({
+          skipDuplicates: true,
+          data: steps.map((step) => {
+            return {
+              id: step.id,
+              funnelId,
+              name: step.name,
+              type: step.type,
+              config: step.config,
+              data: step.data,
+            };
+          }),
+        });
+
+        await txn.edge.createMany({
+          skipDuplicates: true,
+          data: edges.map((edge) => {
+            return {
+              id: edge.id,
+              funnelId,
+              originId: edge.originId,
+              destinyId: edge.destinyId,
+            };
+          }),
+        });
+      });
     } catch (err) {
       throw err;
     }

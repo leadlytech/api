@@ -423,6 +423,7 @@ model Funnel {
   updatedAt      DateTime     @default(now()) @updatedAt
   Variable       Variable[]
   Step           Step[]
+  Edge           Edge[]
   Tracker        Tracker[]
   Journey        Journey[]
 
@@ -519,6 +520,7 @@ model Step {
   type        EStepType
   name        String // Nome customizável da etapa
   config      Json? // Configuração efetiva da etapa (Varia de acordo com o tipo da etapa)
+  data        Json? // Dados da etapa (Varia de acordo com o tipo da etapa)
   statistics  Json? // Estatísticas da etapa
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @default(now()) @updatedAt
@@ -532,6 +534,8 @@ model Step {
 // Modelo que armazena as coneções entre as etapas
 model Edge {
   id        String   @id
+  funnelId  String
+  funnel    Funnel   @relation(fields: [funnelId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   originId  String
   origin    Step     @relation("EdgeOrigin", fields: [originId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   destinyId String
