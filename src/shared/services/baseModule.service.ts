@@ -37,7 +37,7 @@ export class BaseModuleService {
       params: req.params as any,
       query: req.query as any,
       body: req.body,
-      content,
+      content: req['content'] || content,
       res,
     };
   }

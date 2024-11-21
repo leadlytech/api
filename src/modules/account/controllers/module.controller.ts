@@ -1,8 +1,8 @@
-import { Controller, Res, Req, Get, Post } from '@nestjs/common';
+import { Controller, Res, Req, Get, Post, Patch } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 import { ModuleService } from '../services';
-import { membershipSchema, origin } from '../dto';
+import { updateMeSchema, membershipSchema, origin } from '../dto';
 import { IResponse } from 'src/interfaces';
 import { Auth } from 'src/decorators';
 import { BaseModuleController } from 'src/shared/services';
@@ -17,8 +17,19 @@ export class ModuleController extends BaseModuleController {
   }
 
   @Get()
-  async me(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
-    const response: IResponse = await this.moduleService.me({ req, res });
+  async findMe(@Req() req: Request, @Res() res: Response): Promise<IResponse> {
+    const response: IResponse = await this.moduleService.findMe({ req, res });
+    return res.status(response.statusCode).json(response);
+  }
+
+  @Patch()
+  async updateMe(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<IResponse> {
+    const response: IResponse = await this.moduleService.updateMe(
+      this.validate(req, res, updateMeSchema),
+    );
     return res.status(response.statusCode).json(response);
   }
 
