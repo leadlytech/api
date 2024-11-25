@@ -19,6 +19,7 @@ import {
   TUpdateRequest,
 } from '../dto';
 import { createRecordId } from 'src/utils';
+import { EOriginRoutes } from 'src/routes';
 
 @Injectable()
 export class HelperService extends BaseHelperService {
@@ -189,6 +190,7 @@ export class HelperService extends BaseHelperService {
 
       this.eventService.update(this.origin, record);
       await this.cacheService.del(this.origin, record.id);
+      await this.cacheService.del(EOriginRoutes.FUNNELS_PUBLIC, record.id);
       this.logger.log(`One "${this.origin}" was updated (ID: ${record.id})`);
 
       return record;
@@ -211,6 +213,7 @@ export class HelperService extends BaseHelperService {
 
       this.eventService.remove(this.origin, record);
       await this.cacheService.del(this.origin, record.id);
+      await this.cacheService.del(EOriginRoutes.FUNNELS_PUBLIC, record.id);
       this.logger.log(`One "${this.origin}" was deleted (ID: ${record.id})`);
     } catch (err) {
       throw err;

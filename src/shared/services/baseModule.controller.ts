@@ -17,7 +17,7 @@ export class BaseModuleController {
       };
 
       const contentParsed = schema.parse(content);
-      req['content'] = contentParsed;
+      req['content'] = { ...contentParsed, ...req.params };
       return { req, res };
     } catch (err) {
       throw new HttpException(
